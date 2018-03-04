@@ -1,28 +1,109 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Jubilant_Waffle {
+    public struct FileToSend {
+        public string path;
+        public string ip;
+    }
     class Client {
         /* Map of the users known. It indexed by IP address since each connection brings the IP */
         System.Collections.Generic.Dictionary<String, User> users;
-
+        System.Collections.Generic.LinkedList<FileToSend> files;
         System.Net.Sockets.UdpClient udp;
-        System.Net.Sockets.TcpClient tcp;
+
+        bool _cancelCurrent = false; // This is used to undo the current transfer
 
         public Client() {
             udp = new System.Net.Sockets.UdpClient();
-            tcp = new System.Net.Sockets.TcpClient();
-            tcp.ReceiveTimeout = tcp.SendTimeout = 2000; // The timeout set the maxiumum amount of time that the Listener will wait befor throwing and exception
+            users = new System.Collections.Generic.Dictionary<string, User>();
+            files = new System.Collections.Generic.LinkedList<FileToSend>();
+            new System.Threading.Thread(() => ConsumeFileList());
+            new System.Threading.Thread(() => ListenForConnections());
         }
 
-        public void SendFile() {
-
+        private void ConsumeFileList() {
+            FileToSend fts;
+            while (true) {
+                lock (files) {
+                    /* If there are no files pending, wait until notification received */
+                    while (files.Count == 0) {
+                        System.Threading.Monitor.Wait(files);
+                    }
+                    /* Get first in the list and remove it */
+                    fts = files.First.Value;
+                    files.RemoveFirst();
+                }
+                SendFile(fts.path, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), 20000));
+            }
         }
 
-        private void ClientRoutine() {
+        private void SendFile(string path, System.Net.IPEndPoint iPEndPoint) {
+            /// The file is sent using the following sintax
+            ///     - Control message 'FILE!'
+            ///     - File size on 8 byte
+            ///     - File data
+            ///  
+            #region variables
+            System.Net.Sockets.TcpClient dataChannel = new System.Net.Sockets.TcpClient(); // The tcp client used to send data 
+            dataChannel.ReceiveTimeout = dataChannel.SendTimeout = 2000;
+            System.IO.FileStream fs; //The file stream to be send 
+            byte[] data; // buffer for sockets
+            long fileSize; // The size of the file to be sent
+            long dataSent = 0; // The amount of data already sent
+            #endregion
+            #region Open connection
+            data = System.Text.Encoding.ASCII.GetBytes("FILE!");
+            try {
+                dataChannel.GetStream().Write(data, 0, 5);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. File will not be sent */
+                System.Console.Write("Impossible send file, connection unsuccessful");
+                return;
+            }
+            #endregion
+            //TODO eventually add a connection for control channel
+            #region Send file length
+            fileSize = (new System.IO.FileInfo(path)).Length;
+            data = System.BitConverter.GetBytes(fileSize);
+            try {
+                dataChannel.GetStream().Write(data, 0, 8);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. File will not be sent */
+                System.Console.Write("Impossible send file, connection unsuccessful");
+                return;
+            }
+            #endregion
+            #region Send file
+            /* Open the file */
+            try {
+                fs = System.IO.File.OpenRead(path);
+            }
+            catch (System.IO.FileNotFoundException e) {
+                /* Could not find the file. File will not be sent */
+                System.Console.Write("Impossible send file, file not found");
+                return;
+            }
+
+            /* Send the file */
+            data = new byte[4 * 1024 * 1024];
+            while (dataSent < fileSize && !_cancelCurrent) {
+                int sizeOfLastRead = 0;
+                try {
+                    sizeOfLastRead = fs.Read(data, 0, (int)System.Math.Min(fileSize - dataSent, (long)data.Length));
+                }
+                catch {
+                    /* Could not read the file. File will not be sent */
+                    System.Console.Write("Impossible send file, error will reading");
+                    return;
+                }
+                dataChannel.GetStream().Write(data, 0, sizeOfLastRead);
+            }
+            #endregion
+        }
+
+        private void ListenForConnections() {
             /// Listen for user in/out in the LAN
             while (true) {
                 System.Net.IPEndPoint endpoint = new System.Net.IPEndPoint(0, 0); // The endpoint will identify the user that sent the message
@@ -54,6 +135,7 @@ namespace Jubilant_Waffle {
         private void AddNewUser(System.Net.IPAddress userAddress) {
             #region Connect to user to ask info
             System.Net.Sockets.TcpClient tcp = new System.Net.Sockets.TcpClient();
+            tcp.SendTimeout = tcp.ReceiveTimeout = 2000;
             try {
                 tcp.Connect(new System.Net.IPEndPoint(userAddress, 20000));
             }
