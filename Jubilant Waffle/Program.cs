@@ -9,11 +9,16 @@ namespace Jubilant_Waffle {
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
+        static Client client;
+        static Server server;
+
         [STAThread]
-        static void Main() {
+static void Main() {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());
+
+
         }
     }
 }
