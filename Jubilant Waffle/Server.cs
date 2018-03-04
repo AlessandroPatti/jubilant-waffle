@@ -30,7 +30,7 @@ namespace Jubilant_Waffle {
             }
         }
 
-        Server(int port) {
+        public Server(int port) {
             #region UDP Client/Server and Timer setup
             udp = new System.Net.Sockets.UdpClient();
             udp.Connect(System.Net.IPAddress.Broadcast, port); //Set the default IP address. It is the broadcast address and the port passed to the constructor
@@ -45,7 +45,7 @@ namespace Jubilant_Waffle {
             #endregion 
             #region TCP Server setup
             tcp = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Any, port);
-            tcp.Server.ReceiveTimeout = tcp.Server.SendTimeout = 2000; // The send timeout set the maxiumum amount of time that the Listener will wait befor throwing and exception
+            tcp.Server.ReceiveTimeout = tcp.Server.SendTimeout = 2000; // The timeout set the maxiumum amount of time that the Listener will wait befor throwing and exception
             #endregion
         }
 
