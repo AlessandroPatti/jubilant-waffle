@@ -11,6 +11,7 @@ namespace Jubilant_Waffle {
         System.Net.Sockets.TcpListener tcp;
         #endregion
 
+        bool _cancelCurrent = false; // This is used to undo the current transfer
         bool _status = false; //The status
         bool Status {
             get {
@@ -170,6 +171,66 @@ namespace Jubilant_Waffle {
         }
 
         private void ReceiveFile(System.Net.Sockets.TcpClient client) {
+            byte[] data;
+            int fileNameLenght;
+            string filename;
+            long fileSize;
+            long alreadyReceived = 0;
+            System.IO.FileStream fs;
+            #region Read file name lenght
+            data = new byte[4];
+            try {
+                client.GetStream().Read(data, 0, 4);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. Request aborted */
+                System.Console.Write("Impossible receiving file, failed reading file name lenght");
+                return;
+            }
+            fileNameLenght = System.BitConverter.ToInt32(data, 0);
+            #endregion
+            #region Read file name
+            data = new byte[fileNameLenght];
+            try {
+                client.GetStream().Read(data, 0, fileNameLenght);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. Request aborted */
+                System.Console.Write("Impossible receiving file, failed reading file name");
+                return;
+            }
+            filename = System.Text.Encoding.ASCII.GetString(data);
+            #endregion
+            #region Read file size
+            data = new byte[8];
+            try {
+                client.GetStream().Read(data, 0, 8);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. Request aborted */
+                System.Console.Write("Impossible receiving file, failed reading file size");
+                return;
+            }
+            fileSize = System.BitConverter.ToInt64(data, 0);
+            #endregion
+            #region Receive file
+            data = new byte[4 * 1024 * 1024];
+            //TODO existing file will be automatically overwritten. Modify this behaviour later
+            fs = new System.IO.FileStream(filename, System.IO.FileMode.Create);
+            while (alreadyReceived < fileSize && !_cancelCurrent) {
+                try {
+                    client.GetStream().Read(data, 0, (int)System.Math.Min((long)4 * 1024 * 1024, fileSize - alreadyReceived));
+                }
+                catch (System.Net.Sockets.SocketException e) {
+                    /* Could not connect to the host, something went wrong. Request aborted */
+                    System.Console.Write("Impossible receiving file, failed reading file size");
+                    return;
+                }
+
+            }
+            /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
+            _cancelCurrent = false;
+            #endregion
             throw new NotImplementedException();
         }
     }

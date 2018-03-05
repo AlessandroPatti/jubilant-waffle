@@ -40,7 +40,9 @@ namespace Jubilant_Waffle {
         private void SendFile(string path, System.Net.IPEndPoint iPEndPoint) {
             /// The file is sent using the following sintax
             ///     - Control message 'FILE!'
-            ///     - File size on 8 byte
+            ///     - File name lenght on 4 bytes
+            ///     - File name
+            ///     - File size on 8 bytes
             ///     - File data
             ///  
             #region variables
@@ -48,6 +50,7 @@ namespace Jubilant_Waffle {
             dataChannel.ReceiveTimeout = dataChannel.SendTimeout = 2000;
             System.IO.FileStream fs; //The file stream to be send 
             byte[] data; // buffer for sockets
+            int nameLenght;
             long fileSize; // The size of the file to be sent
             long dataSent = 0; // The amount of data already sent
             #endregion
@@ -63,11 +66,34 @@ namespace Jubilant_Waffle {
             }
             #endregion
             //TODO eventually add a connection for control channel
+            #region Send file name lenght
+            nameLenght = System.IO.Path.GetFileName(path).Length;
+            data = System.BitConverter.GetBytes(nameLenght);
+            try {
+                dataChannel.GetStream().Write(data, 0, data.Length);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. File will not be sent */
+                System.Console.Write("Impossible send file, failed sending file name lenght");
+                return;
+            }
+            #endregion
+            #region Send file name
+            data = System.Text.Encoding.ASCII.GetBytes(System.IO.Path.GetFileName(path));
+            try {
+                dataChannel.GetStream().Write(data, 0, data.Length);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. File will not be sent */
+                System.Console.Write("Impossible send file, failed sending file name");
+                return;
+            }
+#endregion
             #region Send file length
             fileSize = (new System.IO.FileInfo(path)).Length;
             data = System.BitConverter.GetBytes(fileSize);
             try {
-                dataChannel.GetStream().Write(data, 0, 8);
+                dataChannel.GetStream().Write(data, 0, data.Length);
             }
             catch (System.Net.Sockets.SocketException e) {
                 /* Could not connect to the host, something went wrong. File will not be sent */
@@ -100,6 +126,8 @@ namespace Jubilant_Waffle {
                 }
                 dataChannel.GetStream().Write(data, 0, sizeOfLastRead);
             }
+            /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
+            _cancelCurrent = false;
             #endregion
         }
 
