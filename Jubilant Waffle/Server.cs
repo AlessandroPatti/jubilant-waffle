@@ -58,10 +58,11 @@ namespace Jubilant_Waffle {
 
         private void ServerRoutine() {
             ///Put the server in listen mode. Each new connection is executed into a new separate thread.
+            System.Net.Sockets.TcpClient incomingConnection;
             while (_status) {
                 #region Wait for new connections
                 try {
-                    System.Net.Sockets.TcpClient incomingConnection = tcp.AcceptTcpClient();
+                    incomingConnection = tcp.AcceptTcpClient();
                 }
                 catch (System.Net.Sockets.SocketException e) {
                     /* 
@@ -72,12 +73,47 @@ namespace Jubilant_Waffle {
                 }
                 #endregion
                 #region new incoming connection
-                new System.Threading.Thread(() => ManageConnection());
+                new System.Threading.Thread(() => ManageConnection(incomingConnection));
                 #endregion
             }
         }
 
-        private void ManageConnection() {
+        private void ManageConnection(System.Net.Sockets.TcpClient client) {
+            /// Manage new incoming connection. Connection can be of two types
+            ///     - Request for file transfer, control message 'FILE!'
+            ///     - Rest for user info, control message 'WHO??'
+
+            byte[] data = new byte[5];
+            string msg;
+            #region Read request
+            try {
+                client.GetStream().Read(data, 0, 5);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. Request aborted */
+                System.Console.Write("Impossible parse request, control message not received");
+                return;
+            }
+            msg = System.Text.Encoding.ASCII.GetString(data);
+            #endregion
+            #region Parse request
+            switch (msg) {
+                case "FILE!":
+                    ReceiveFile(client);
+                    break;
+                case "WHO??":
+                    SendPersonalInfo(client);
+                    break;
+            }
+            #endregion
+        }
+
+        private void SendPersonalInfo(TcpClient client) {
+
+            throw new NotImplementedException();
+        }
+
+        private void ReceiveFile(TcpClient client) {
             throw new NotImplementedException();
         }
     }
