@@ -157,13 +157,13 @@ namespace Jubilant_Waffle {
             #endregion
             #region Get reply message
             /* The reply message is
-             *      - ITSME  when the message contains the image. In this case 
+             *      - MARIO  when the message contains the image. In this case 
              *          the message will have this format
              *              - 4 byte of name lenght
              *              - name
-             *              - 4 byte for image lengt
+             *              - 8 byte for image lengt
              *              - image
-             *      - ME!!! when the user do not have any image. In this case 
+             *      - LUIGI when the user do not have any image. In this case 
              *          the message will have this format
              *              - 4 byte of name lenght
              *              - name
@@ -214,28 +214,28 @@ namespace Jubilant_Waffle {
             name = System.Text.Encoding.ASCII.GetString(nameByte);
             #endregion
             #region Eventually get image and store it into disk
-            if (msg == "ITSME") {
+            if (msg == "MARIO") {
                 /* 
                  * First read the leght of the image file 
                  */
-                Int32 imageLenght;
+                long imageLenght;
                 byte[] image;
                 try {
-                    tcp.GetStream().Read(lenght, 0, 4);
+                    tcp.GetStream().Read(lenght, 0, 8);
                 }
                 catch (System.Net.Sockets.SocketException e) {
                     /* Could not connect to the host, something went wrong. Nothing will happen */
                     System.Console.Write("Impossible add new user, image lenght unsuccessful");
                     return;
                 }
-                imageLenght = System.BitConverter.ToInt32(lenght, 0); //TODO how to manage big and little endian?
+                imageLenght = System.BitConverter.ToInt64(lenght, 0); //TODO how to manage big and little endian?
 
                 /* 
                  * Read the actual image file 
                  */
                 image = new byte[imageLenght];
                 try {
-                    tcp.GetStream().Read(image, 0, imageLenght);
+                    tcp.GetStream().Read(image, 0, (Int32) imageLenght);  //TODO Warning! Casting to int may cause lost of MSBs! Introduce image size limit?
                 }
                 catch (System.Net.Sockets.SocketException e) {
                     /* Could not connect to the host, something went wrong. Nothing will happen */
@@ -252,7 +252,7 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Add the user to the list of known
-            if (msg == "ITSME") {
+            if (msg == "MARIO") {
                 users.Add(userAddress.ToString(), new User(name, userAddress.ToString(), "user_pic/" + userAddress.ToString() + ".png"));
             }
             else {

@@ -1,7 +1,7 @@
 ﻿using System;
 namespace Jubilant_Waffle {
     class Server {
-
+        User self; // Represent the user running the application
         #region UDPClient
         /* The UDP client is only in charge of sending periodically an announcement if the the status is online */
         System.Net.Sockets.UdpClient udp; //The client
@@ -30,7 +30,10 @@ namespace Jubilant_Waffle {
             }
         }
 
-        public Server(int port) {
+        public Server(int port, string name, string image = null) {
+            #region Setup personal info
+            self = new User(name, "127.0.0.1", image);
+            #endregion
             #region UDP Client/Server and Timer setup
             udp = new System.Net.Sockets.UdpClient();
             udp.Connect(System.Net.IPAddress.Broadcast, port); //Set the default IP address. It is the broadcast address and the port passed to the constructor
@@ -109,8 +112,61 @@ namespace Jubilant_Waffle {
         }
 
         private void SendPersonalInfo(System.Net.Sockets.TcpClient client) {
-
-            throw new NotImplementedException();
+            byte[] data;
+            long imageLenght;
+            #region Send response
+            if (self.imagePath != null)
+                data = System.Text.Encoding.ASCII.GetBytes("MARIO");
+            else
+                data = System.Text.Encoding.ASCII.GetBytes("LUIGI");
+            try {
+                client.GetStream().Write(data, 0, data.Length);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. Request aborted */
+                System.Console.Write("Impossible serving personal info request, failed sending response");
+                return;
+            }
+            #endregion
+            #region Send name lenght
+            data = System.BitConverter.GetBytes(self.name.Length);
+            try {
+                client.GetStream().Write(data, 0, data.Length);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. Request aborted */
+                System.Console.Write("Impossible serving personal info request, failed sending name lenght");
+                return;
+            }
+            #endregion
+            #region Send name
+            data = System.Text.Encoding.ASCII.GetBytes(self.name);
+            try {
+                client.GetStream().Write(data, 0, data.Length);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+                /* Could not connect to the host, something went wrong. Request aborted */
+                System.Console.Write("Impossible serving personal info request, failed sending name");
+                return;
+            }
+            #endregion
+            if (self.imagePath != null) {
+                #region Send image lenght
+                imageLenght = (new System.IO.FileInfo(self.imagePath)).Length;
+                data = System.BitConverter.GetBytes(imageLenght);
+                try {
+                    client.GetStream().Write(data, 0, data.Length);
+                }
+                catch (System.Net.Sockets.SocketException e) {
+                    /* Could not connect to the host, something went wrong. Request aborted */
+                    System.Console.Write("Impossible serving personal info request, failed sending image lenght");
+                    return;
+                }
+                #endregion
+                #region Send Image
+                client.Client.SendFile(self.imagePath);
+                #endregion
+            }
         }
 
         private void ReceiveFile(System.Net.Sockets.TcpClient client) {
