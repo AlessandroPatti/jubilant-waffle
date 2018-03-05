@@ -108,12 +108,12 @@ namespace Jubilant_Waffle {
             #endregion
         }
 
-        private void SendPersonalInfo(TcpClient client) {
+        private void SendPersonalInfo(System.Net.Sockets.TcpClient client) {
 
             throw new NotImplementedException();
         }
 
-        private void ReceiveFile(TcpClient client) {
+        private void ReceiveFile(System.Net.Sockets.TcpClient client) {
             throw new NotImplementedException();
         }
     }
