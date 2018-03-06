@@ -16,7 +16,7 @@ namespace Jubilant_Waffle {
 
         static Server server;
         static Client client;
-
+        static Main mainbox;
         private static System.Threading.Mutex mutex = null;
         [STAThread]
         static void Main() {
@@ -41,6 +41,10 @@ namespace Jubilant_Waffle {
             #endregion
             #region Client
             client = new Client();
+            #endregion
+            #region main box
+            mainbox = new Main();
+            mainbox.Show();
             #endregion
             #region Tray Icon
             trayIcon = new NotifyIcon();
