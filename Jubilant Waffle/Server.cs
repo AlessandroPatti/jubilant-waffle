@@ -12,8 +12,8 @@ namespace Jubilant_Waffle {
         #endregion
 
         bool _cancelCurrent = false; // This is used to undo the current transfer
-        bool _status = false; //The status
-        bool Status {
+        bool _status = false; //The status true means online.
+        public bool Status {
             get {
                 return _status;
             }
@@ -28,6 +28,7 @@ namespace Jubilant_Waffle {
                     tcp.Stop();
                     announceTimer.Enabled = false;
                 }
+                _status = value;
             }
         }
 
