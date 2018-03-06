@@ -69,7 +69,7 @@ namespace Jubilant_Waffle {
                 try {
                     incomingConnection = tcp.AcceptTcpClient();
                 }
-                catch (System.Net.Sockets.SocketException e) {
+                catch (System.Net.Sockets.SocketException) {
                     /* 
                      * SocketException is launched at timeout elased. Nothing as to be done, 
                      * but thanks to the timeout the status condition is periodically checked.
@@ -94,7 +94,7 @@ namespace Jubilant_Waffle {
             try {
                 client.GetStream().Read(data, 0, 5);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Request aborted */
                 System.Console.Write("Impossible parse request, control message not received");
                 return;
@@ -124,7 +124,7 @@ namespace Jubilant_Waffle {
             try {
                 client.GetStream().Write(data, 0, data.Length);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Request aborted */
                 System.Console.Write("Impossible serving personal info request, failed sending response");
                 return;
@@ -135,7 +135,7 @@ namespace Jubilant_Waffle {
             try {
                 client.GetStream().Write(data, 0, data.Length);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Request aborted */
                 System.Console.Write("Impossible serving personal info request, failed sending name lenght");
                 return;

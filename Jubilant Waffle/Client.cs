@@ -59,7 +59,7 @@ namespace Jubilant_Waffle {
             try {
                 dataChannel.GetStream().Write(data, 0, 5);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. File will not be sent */
                 System.Console.Write("Impossible send file, connection unsuccessful");
                 return;
@@ -72,7 +72,7 @@ namespace Jubilant_Waffle {
             try {
                 dataChannel.GetStream().Write(data, 0, data.Length);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. File will not be sent */
                 System.Console.Write("Impossible send file, failed sending file name lenght");
                 return;
@@ -83,7 +83,7 @@ namespace Jubilant_Waffle {
             try {
                 dataChannel.GetStream().Write(data, 0, data.Length);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. File will not be sent */
                 System.Console.Write("Impossible send file, failed sending file name");
                 return;
@@ -95,7 +95,7 @@ namespace Jubilant_Waffle {
             try {
                 dataChannel.GetStream().Write(data, 0, data.Length);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. File will not be sent */
                 System.Console.Write("Impossible send file, connection unsuccessful");
                 return;
@@ -106,7 +106,7 @@ namespace Jubilant_Waffle {
             try {
                 fs = System.IO.File.OpenRead(path);
             }
-            catch (System.IO.FileNotFoundException e) {
+            catch (System.IO.FileNotFoundException) {
                 /* Could not find the file. File will not be sent */
                 System.Console.Write("Impossible send file, file not found");
                 return;
@@ -234,7 +234,7 @@ namespace Jubilant_Waffle {
             try {
                 tcp.GetStream().Read(nameByte, 0, nameLenght);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Nothing will happen */
                 System.Console.Write("Impossible add new user, name unsuccessful");
                 return;
