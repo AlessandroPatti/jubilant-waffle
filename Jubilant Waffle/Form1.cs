@@ -24,6 +24,7 @@ namespace Jubilant_Waffle {
             #region Client
             client = new Client();
             #endregion
+            this.Icon = new Icon(iconFile);
             #region Tray Icon
             trayIcon = new NotifyIcon();
             trayIcon.Visible = true;

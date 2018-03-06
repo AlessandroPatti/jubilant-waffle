@@ -167,7 +167,7 @@ namespace Jubilant_Waffle {
             try {
                 tcp.Connect(new System.Net.IPEndPoint(userAddress, 20000));
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Nothing will happen */
                 System.Console.Write("Impossible add new user, connection unsuccessful");
                 return;
@@ -177,7 +177,7 @@ namespace Jubilant_Waffle {
             try {
                 tcp.Client.Send(System.Text.Encoding.ASCII.GetBytes("WHO??"));
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Nothing will happen */
                 System.Console.Write("Impossible add new user, request unsuccessful");
                 return;
@@ -201,7 +201,7 @@ namespace Jubilant_Waffle {
             try {
                 tcp.GetStream().Read(msgByte, 0, 5);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Nothing will happen */
                 System.Console.Write("Impossible add new user, reply unsuccessful");
                 return;
@@ -220,7 +220,7 @@ namespace Jubilant_Waffle {
             try {
                 tcp.GetStream().Read(lenght, 0, 4);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Nothing will happen */
                 System.Console.Write("Impossible add new user, name lenght unsuccessful");
                 return;
@@ -251,7 +251,7 @@ namespace Jubilant_Waffle {
                 try {
                     tcp.GetStream().Read(lenght, 0, 8);
                 }
-                catch (System.Net.Sockets.SocketException e) {
+                catch (System.Net.Sockets.SocketException) {
                     /* Could not connect to the host, something went wrong. Nothing will happen */
                     System.Console.Write("Impossible add new user, image lenght unsuccessful");
                     return;
@@ -265,7 +265,7 @@ namespace Jubilant_Waffle {
                 try {
                     tcp.GetStream().Read(image, 0, (Int32) imageLenght);  //TODO Warning! Casting to int may cause lost of MSBs! Introduce image size limit?
                 }
-                catch (System.Net.Sockets.SocketException e) {
+                catch (System.Net.Sockets.SocketException) {
                     /* Could not connect to the host, something went wrong. Nothing will happen */
                     System.Console.Write("Impossible add new user, image unsuccessful");
                     return;

@@ -146,7 +146,7 @@ namespace Jubilant_Waffle {
             try {
                 client.GetStream().Write(data, 0, data.Length);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Request aborted */
                 System.Console.Write("Impossible serving personal info request, failed sending name");
                 return;
@@ -159,7 +159,7 @@ namespace Jubilant_Waffle {
                 try {
                     client.GetStream().Write(data, 0, data.Length);
                 }
-                catch (System.Net.Sockets.SocketException e) {
+                catch (System.Net.Sockets.SocketException) {
                     /* Could not connect to the host, something went wrong. Request aborted */
                     System.Console.Write("Impossible serving personal info request, failed sending image lenght");
                     return;
@@ -183,7 +183,7 @@ namespace Jubilant_Waffle {
             try {
                 client.GetStream().Read(data, 0, 4);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Request aborted */
                 System.Console.Write("Impossible receiving file, failed reading file name lenght");
                 return;
@@ -195,7 +195,7 @@ namespace Jubilant_Waffle {
             try {
                 client.GetStream().Read(data, 0, fileNameLenght);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Request aborted */
                 System.Console.Write("Impossible receiving file, failed reading file name");
                 return;
@@ -207,7 +207,7 @@ namespace Jubilant_Waffle {
             try {
                 client.GetStream().Read(data, 0, 8);
             }
-            catch (System.Net.Sockets.SocketException e) {
+            catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Request aborted */
                 System.Console.Write("Impossible receiving file, failed reading file size");
                 return;
@@ -222,7 +222,7 @@ namespace Jubilant_Waffle {
                 try {
                     client.GetStream().Read(data, 0, (int)System.Math.Min((long)4 * 1024 * 1024, fileSize - alreadyReceived));
                 }
-                catch (System.Net.Sockets.SocketException e) {
+                catch (System.Net.Sockets.SocketException) {
                     /* Could not connect to the host, something went wrong. Request aborted */
                     System.Console.Write("Impossible receiving file, failed reading file size");
                     return;
