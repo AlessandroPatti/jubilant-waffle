@@ -5,7 +5,7 @@ namespace Jubilant_Waffle {
         public string path;
         public string ip;
     }
-    class Client {
+    public class Client {
         /* Map of the users known. It indexed by IP address since each connection brings the IP */
         System.Collections.Generic.Dictionary<String, User> users;
         System.Collections.Generic.LinkedList<FileToSend> files;
@@ -88,9 +88,12 @@ namespace Jubilant_Waffle {
                 System.Console.Write("Impossible send file, failed sending file name");
                 return;
             }
-#endregion
+            #endregion
+            #region Zip
+            //TODO zip the file
+            #endregion
             #region Send file length
-            fileSize = (new System.IO.FileInfo(path)).Length;
+            fileSize = (new System.IO.FileInfo(path)).Length;//TODO update with size of archive when compression is implemented
             data = System.BitConverter.GetBytes(fileSize);
             try {
                 dataChannel.GetStream().Write(data, 0, data.Length);
@@ -263,7 +266,7 @@ namespace Jubilant_Waffle {
                  */
                 image = new byte[imageLenght];
                 try {
-                    tcp.GetStream().Read(image, 0, (Int32) imageLenght);  //TODO Warning! Casting to int may cause lost of MSBs! Introduce image size limit?
+                    tcp.GetStream().Read(image, 0, (Int32)imageLenght);  //TODO Warning! Casting to int may cause lost of MSBs! Introduce image size limit?
                 }
                 catch (System.Net.Sockets.SocketException) {
                     /* Could not connect to the host, something went wrong. Nothing will happen */

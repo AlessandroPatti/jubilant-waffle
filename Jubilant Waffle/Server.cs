@@ -1,6 +1,6 @@
 ﻿using System;
 namespace Jubilant_Waffle {
-    class Server {
+    public class Server {
         User self; // Represent the user running the application
         #region UDPClient
         /* The UDP client is only in charge of sending periodically an announcement if the the status is online */
@@ -11,6 +11,9 @@ namespace Jubilant_Waffle {
         System.Net.Sockets.TcpListener tcp;
         #endregion
 
+        public string defaultPath;
+        public bool _useDefault;
+        public bool _autoSave;
         bool _cancelCurrent = false; // This is used to undo the current transfer
         bool _status = false; //The status true means online.
         public bool Status {
@@ -178,6 +181,12 @@ namespace Jubilant_Waffle {
             long fileSize;
             long alreadyReceived = 0;
             System.IO.FileStream fs;
+            if (!_autoSave) {
+                //TODO Prompt accept connection
+            }
+            if (!_useDefault) {
+                //TODO Prompt request path
+            }
             #region Read file name lenght
             data = new byte[4];
             try {
@@ -232,7 +241,9 @@ namespace Jubilant_Waffle {
             /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
             _cancelCurrent = false;
             #endregion
-            throw new NotImplementedException();
+            #region Unzip
+            //TODO unzip file
+#endregion
         }
     }
 }

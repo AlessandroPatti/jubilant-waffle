@@ -11,11 +11,11 @@ namespace Jubilant_Waffle {
         /// </summary>
 
 
+        static private Server server;
+        static private Client client;
         const string iconFile = "waffle_icon_3x_multiple.ico";
         static System.Windows.Forms.NotifyIcon trayIcon;
 
-        static Server server;
-        static Client client;
         static Main mainbox;
         private static System.Threading.Mutex mutex = null;
         [STAThread]
@@ -25,7 +25,13 @@ namespace Jubilant_Waffle {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             #endregion
-
+            #region Server
+            //TODO Name should be taken from a config file
+            server = new Server(20000, "Alessandro");
+            #endregion
+            #region Client
+            client = new Client();
+            #endregion
             #region Make the application single instance
             // code at http://www.c-sharpcorner.com/UploadFile/f9f215/how-to-restrict-the-application-to-just-one-instance/
             bool createdNew;
@@ -35,16 +41,8 @@ namespace Jubilant_Waffle {
                 return;
             }
             #endregion
-            #region Server
-            //TODO Name should be taken from a config file
-            server = new Server(20000, "Alessandro");
-            #endregion
-            #region Client
-            client = new Client();
-            #endregion
             #region main box
-            mainbox = new Main();
-            mainbox.Show();
+            mainbox = new Main(server, client);
             #endregion
             #region Tray Icon
             trayIcon = new NotifyIcon();
@@ -61,7 +59,7 @@ namespace Jubilant_Waffle {
             //this.ShowInTaskbar = false;
             /* Show notification */
             trayIcon.ShowBalloonTip(500, "Jubilant Waffle", "Jubilant Waffle always runs minimized into tray", ToolTipIcon.None);
-
+            trayIcon.BalloonTipClicked += (object s, EventArgs e) => mainbox.Show();
             /*
              * Set the mouse right click menu
              */
@@ -75,6 +73,9 @@ namespace Jubilant_Waffle {
             trayContextMenuItems[1].Click += ChangeStatus;
 
             trayIcon.ContextMenu = new ContextMenu(trayContextMenuItems);
+            
+            /* Show box on left click */
+            trayIcon.MouseClick += ShowMainBox;
             #endregion
             #region Context Menu entry
             /*
@@ -86,15 +87,20 @@ namespace Jubilant_Waffle {
             /* Files */
             AddRegistryEntry(@"Software\Classes\*\shell\jubilant-waffle", "Share with Jubilant Waffle");
             AddRegistryEntry(@"Software\Classes\*\shell\jubilant-waffle\command", Application.ExecutablePath + " %1");
-            AddRegistryEntry(@"Software\Classes\*\shell\jubilant-waffle\Icon", System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\" + iconFile);
+            AddRegistryEntry(@"Software\Classes\*\shell\jubilant-waffle\Icon", Application.ExecutablePath);
             /* Directory */
             AddRegistryEntry(@"Software\Classes\Directory\shell\jubilant-waffle", "Share with Jubilant Waffle");
-            AddRegistryEntry(@"Software\Classes\Directory\shell\jubilant-waffle\command", Application.ExecutablePath);
-            AddRegistryEntry(@"Software\Classes\Directory\shell\jubilant-waffle\Icon", System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\" + iconFile);
+            AddRegistryEntry(@"Software\Classes\Directory\shell\jubilant-waffle\command", Application.ExecutablePath + " %1");
+            AddRegistryEntry(@"Software\Classes\Directory\shell\jubilant-waffle\Icon", Application.ExecutablePath);
             #endregion
 
             Application.Run();
 
+        }
+
+        private static void ShowMainBox(object sender, MouseEventArgs e) {
+            if(e.Button == MouseButtons.Left)
+                mainbox.Show();
         }
 
         static private void ChangeStatus(object sender, EventArgs e) {
