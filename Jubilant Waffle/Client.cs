@@ -10,17 +10,86 @@ namespace Jubilant_Waffle {
         System.Collections.Generic.Dictionary<String, User> users;
         System.Collections.Generic.LinkedList<FileToSend> files;
         System.Net.Sockets.UdpClient udp;
-
+        /* Pipe used to communicate with other istances (i.e. right click send) */
+        System.IO.Pipes.NamedPipeServerStream nps;
         bool _cancelCurrent = false; // This is used to undo the current transfer
 
         public Client() {
             udp = new System.Net.Sockets.UdpClient();
             users = new System.Collections.Generic.Dictionary<string, User>();
             files = new System.Collections.Generic.LinkedList<FileToSend>();
+            nps = new System.IO.Pipes.NamedPipeServerStream("Jubilant_Waffle", System.IO.Pipes.PipeDirection.In);
             new System.Threading.Thread(() => ConsumeFileList());
             new System.Threading.Thread(() => ListenForConnections());
         }
 
+        static public void EnqueueMessageInPipe(string ip, string msg) {
+            /// static method that wrap the creating of a named pipe for communicate with main instance
+            /// Data are pushed tp the pipe in the following order.
+            ///     - Lenght of string with ip address on 4 bytes
+            ///     - IP address
+            ///     - Lenght of path string on 4 bytes
+            ///     - Path
+
+            System.IO.Pipes.NamedPipeServerStream pipe = new System.IO.Pipes.NamedPipeServerStream("Jubilant_Waffle", System.IO.Pipes.PipeDirection.Out);
+            byte[] data;
+
+            #region Push IP
+            data = System.BitConverter.GetBytes(ip.Length);
+            pipe.Write(data, 0, data.Length);
+            data = System.Text.Encoding.ASCII.GetBytes(ip);
+            pipe.Write(data, 0, data.Length);
+            #endregion
+
+            #region Push path
+            data = System.BitConverter.GetBytes(msg.Length);
+            pipe.Write(data, 0, data.Length);
+            data = System.Text.Encoding.ASCII.GetBytes(msg);
+            pipe.Write(data, 0, data.Length);
+            #endregion
+        }
+        private void ReadPipe() {
+            /// This method wait for connection on pipe and fill the list of file to be sent
+            /// Data are pushed into the pipe using the EnqueueMessageInPipe method 
+            /// and thus are read in the following order
+            ///     - Lenght of string with ip address on 4 bytes
+            ///     - IP address
+            ///     - Lenght of path string on 4 bytes
+            ///     - Path
+
+            byte[] len = new byte[4];
+            byte[] data;
+            int lenght;
+            string ip, path;
+            FileToSend fts;
+            while (true) {
+                nps.WaitForConnection();
+                #region Read IP address
+                nps.Read(len, 0, 4);
+                lenght = System.BitConverter.ToInt32(len, 0);
+                data = new byte[lenght];
+                nps.Read(data, 0, lenght);
+                ip = System.Text.Encoding.ASCII.GetString(data);
+                #endregion
+                #region Read path
+                nps.Read(len, 0, 4);
+                lenght = System.BitConverter.ToInt32(len, 0);
+                data = new byte[lenght];
+                nps.Read(data, 0, lenght);
+                path = System.Text.Encoding.ASCII.GetString(data);
+                #endregion
+                #region Push new file
+                fts = new FileToSend();
+                fts.ip = ip;
+                fts.path = path;
+                lock (files) {
+                    files.AddLast(fts);
+                    System.Threading.Monitor.PulseAll(files);
+                }
+                #endregion
+
+            }
+        }
         private void ConsumeFileList() {
             FileToSend fts;
             while (true) {
@@ -36,7 +105,6 @@ namespace Jubilant_Waffle {
                 SendFile(fts.path, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), 20000));
             }
         }
-
         private void SendFile(string path, System.Net.IPEndPoint iPEndPoint) {
             /// The file is sent using the following sintax
             ///     - Control message 'FILE!'
@@ -162,7 +230,6 @@ namespace Jubilant_Waffle {
                 }
             }
         }
-
         private void AddNewUser(System.Net.IPAddress userAddress) {
             #region Connect to user to ask info
             System.Net.Sockets.TcpClient tcp = new System.Net.Sockets.TcpClient();
