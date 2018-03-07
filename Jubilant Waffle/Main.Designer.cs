@@ -23,11 +23,16 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            this.components = new System.ComponentModel.Container();
             this.DefaultFolderIcon = new System.Windows.Forms.PictureBox();
             this.AutoSaveIcon = new System.Windows.Forms.PictureBox();
-            this.ChangeFolderLabel = new System.Windows.Forms.LinkLabel();
+            this.IncomingLabel = new System.Windows.Forms.Label();
+            this.TransfersLabel = new System.Windows.Forms.Label();
+            this.SettingsIcon = new System.Windows.Forms.PictureBox();
+            this.IconToolTip = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.DefaultFolderIcon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.AutoSaveIcon)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.SettingsIcon)).BeginInit();
             this.SuspendLayout();
             // 
             // DefaultFolderIcon
@@ -36,35 +41,61 @@
             this.DefaultFolderIcon.BackColor = System.Drawing.Color.White;
             this.DefaultFolderIcon.ErrorImage = null;
             this.DefaultFolderIcon.ImageLocation = "folder_default_off.png";
-            this.DefaultFolderIcon.Location = new System.Drawing.Point(334, 0);
+            this.DefaultFolderIcon.Location = new System.Drawing.Point(315, 0);
             this.DefaultFolderIcon.Name = "DefaultFolderIcon";
-            this.DefaultFolderIcon.Size = new System.Drawing.Size(50, 50);
+            this.DefaultFolderIcon.Size = new System.Drawing.Size(35, 35);
+            this.DefaultFolderIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.DefaultFolderIcon.TabIndex = 0;
             this.DefaultFolderIcon.TabStop = false;
+            this.IconToolTip.SetToolTip(this.DefaultFolderIcon, "Enable default folder");
             // 
             // AutoSaveIcon
             // 
             this.AutoSaveIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.AutoSaveIcon.BackColor = System.Drawing.Color.White;
             this.AutoSaveIcon.ImageLocation = "autosave_off.png";
-            this.AutoSaveIcon.Location = new System.Drawing.Point(287, 0);
+            this.AutoSaveIcon.Location = new System.Drawing.Point(280, 0);
             this.AutoSaveIcon.Name = "AutoSaveIcon";
-            this.AutoSaveIcon.Size = new System.Drawing.Size(50, 50);
+            this.AutoSaveIcon.Size = new System.Drawing.Size(35, 35);
+            this.AutoSaveIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.AutoSaveIcon.TabIndex = 1;
             this.AutoSaveIcon.TabStop = false;
+            this.IconToolTip.SetToolTip(this.AutoSaveIcon, "Automatically accept all incoming requests");
             // 
-            // ChangeFolderLabel
+            // IncomingLabel
             // 
-            this.ChangeFolderLabel.ActiveLinkColor = System.Drawing.Color.White;
-            this.ChangeFolderLabel.AutoSize = true;
-            this.ChangeFolderLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.ChangeFolderLabel.LinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(150)))), ((int)(((byte)(230)))));
-            this.ChangeFolderLabel.Location = new System.Drawing.Point(234, 53);
-            this.ChangeFolderLabel.Name = "ChangeFolderLabel";
-            this.ChangeFolderLabel.Size = new System.Drawing.Size(150, 17);
-            this.ChangeFolderLabel.TabIndex = 2;
-            this.ChangeFolderLabel.TabStop = true;
-            this.ChangeFolderLabel.Text = "Change Default Folder";
+            this.IncomingLabel.AutoSize = true;
+            this.IncomingLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.IncomingLabel.Location = new System.Drawing.Point(7, 7);
+            this.IncomingLabel.Name = "IncomingLabel";
+            this.IncomingLabel.Size = new System.Drawing.Size(99, 24);
+            this.IncomingLabel.TabIndex = 3;
+            this.IncomingLabel.Text = "Transfer In";
+            this.IncomingLabel.Click += new System.EventHandler(this.ShowProfile);
+            // 
+            // TransfersLabel
+            // 
+            this.TransfersLabel.AutoSize = true;
+            this.TransfersLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.TransfersLabel.Location = new System.Drawing.Point(112, 7);
+            this.TransfersLabel.Name = "TransfersLabel";
+            this.TransfersLabel.Size = new System.Drawing.Size(110, 24);
+            this.TransfersLabel.TabIndex = 4;
+            this.TransfersLabel.Text = "Transfer out";
+            // 
+            // SettingsIcon
+            // 
+            this.SettingsIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.SettingsIcon.BackColor = System.Drawing.Color.White;
+            this.SettingsIcon.ErrorImage = null;
+            this.SettingsIcon.ImageLocation = "settings.png";
+            this.SettingsIcon.Location = new System.Drawing.Point(350, 0);
+            this.SettingsIcon.Name = "SettingsIcon";
+            this.SettingsIcon.Size = new System.Drawing.Size(35, 35);
+            this.SettingsIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
+            this.SettingsIcon.TabIndex = 5;
+            this.SettingsIcon.TabStop = false;
+            this.IconToolTip.SetToolTip(this.SettingsIcon, "Access application settings");
             // 
             // Main
             // 
@@ -73,15 +104,19 @@
             this.BackColor = System.Drawing.SystemColors.Window;
             this.ClientSize = new System.Drawing.Size(384, 361);
             this.ControlBox = false;
-            this.Controls.Add(this.ChangeFolderLabel);
+            this.Controls.Add(this.SettingsIcon);
+            this.Controls.Add(this.TransfersLabel);
+            this.Controls.Add(this.IncomingLabel);
             this.Controls.Add(this.AutoSaveIcon);
             this.Controls.Add(this.DefaultFolderIcon);
             this.Name = "Main";
             this.Opacity = 0.95D;
             this.ShowIcon = false;
             this.Text = "Main";
+            this.Paint += new System.Windows.Forms.PaintEventHandler(this.Main_Paint);
             ((System.ComponentModel.ISupportInitialize)(this.DefaultFolderIcon)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.AutoSaveIcon)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.SettingsIcon)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -91,6 +126,9 @@
 
         private System.Windows.Forms.PictureBox DefaultFolderIcon;
         private System.Windows.Forms.PictureBox AutoSaveIcon;
-        private System.Windows.Forms.LinkLabel ChangeFolderLabel;
+        private System.Windows.Forms.Label IncomingLabel;
+        private System.Windows.Forms.Label TransfersLabel;
+        private System.Windows.Forms.PictureBox SettingsIcon;
+        private System.Windows.Forms.ToolTip IconToolTip;
     }
 }
