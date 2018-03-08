@@ -1,11 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Jubilant_Waffle {
     public struct FileToSend {
         public string path;
         public string ip;
     }
-    public class Client {
+    public partial class Client : Form {
         /* Map of the users known. It indexed by IP address since each connection brings the IP */
         System.Collections.Generic.Dictionary<String, User> users;
         System.Collections.Generic.LinkedList<FileToSend> files;
@@ -13,33 +21,91 @@ namespace Jubilant_Waffle {
         /* Pipe used to communicate with other istances (i.e. right click send) */
         System.IO.Pipes.NamedPipeServerStream nps;
         bool _cancelCurrent = false; // This is used to undo the current transfer
+        string defaultImagePath; //Use this image if none is selected
+        public Client(int port) {
 
-        public Client() {
-            udp = new System.Net.Sockets.UdpClient();
+            System.Diagnostics.Debug.WriteLine("Client");
+            udp = new System.Net.Sockets.UdpClient(port);
             users = new System.Collections.Generic.Dictionary<string, User>();
             files = new System.Collections.Generic.LinkedList<FileToSend>();
-            nps = new System.IO.Pipes.NamedPipeServerStream("Jubilant_Waffle", System.IO.Pipes.PipeDirection.In);
-            new System.Threading.Thread(() => ConsumeFileList());
-            new System.Threading.Thread(() => ListenForConnections());
-        }
+            #region Initialize pipe
+            try {
+                var pSecurity = new System.IO.Pipes.PipeSecurity();
+                pSecurity.AddAccessRule(new System.IO.Pipes.PipeAccessRule("Everyone",
+                    System.IO.Pipes.PipeAccessRights.ReadWrite,
+                    System.Security.AccessControl.AccessControlType.Allow));
+                nps = new System.IO.Pipes.NamedPipeServerStream("Jubilant_Waffle",
+                    System.IO.Pipes.PipeDirection.InOut,
+                    1,
+                    System.IO.Pipes.PipeTransmissionMode.Byte,
+                    System.IO.Pipes.PipeOptions.None,
+                    512, 512,
+                    pSecurity,
+                    System.IO.HandleInheritability.None
+                    );
+            }
+            catch (Exception e) {
+                //TODO handle error
+                MessageBox.Show(e.Message);
+            }
+            #endregion
+            #region Initialize Form
+            this.StartPosition = FormStartPosition.Manual;
+            this.Location = new System.Drawing.Point((Screen.PrimaryScreen.WorkingArea.Width) / 2 - this.Width,
+                                   (Screen.PrimaryScreen.WorkingArea.Height) / 2 - this.Width);
+            this.ShowInTaskbar = false;
+            InitializeComponent();
 
-        static public void EnqueueMessageInPipe(string ip, string msg) {
+            /* Image ListView */
+            defaultImagePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\default-user-image.png";
+            #endregion
+            #region Test Users
+            users.Add("192.168.1.1", new User("Mario", "192.168.1.1"));
+            users.Add("192.168.1.2", new User("Luigi", "192.168.1.2"));
+            users.Add("192.168.1.3", new User("Antonio", "192.168.1.3"));
+            #endregion
+
+            #region Execute routines
+            System.Threading.Thread ConsumeFileListThread = new System.Threading.Thread(() => ConsumeFileList());
+            System.Threading.Thread ListenForConnectionsThread = new System.Threading.Thread(() => ListenForConnections());
+            System.Threading.Thread ReadPipeThread = new System.Threading.Thread(() => ReadPipe());
+            ConsumeFileListThread.Name = "ConsumeFileList";
+            ListenForConnectionsThread.Name = "ListenForConnections";
+            ReadPipeThread.Name = "ReadPipe";
+            ConsumeFileListThread.Start();
+            ListenForConnectionsThread.Start();
+            ReadPipeThread.Start();
+            #endregion
+        }
+        
+        static public void EnqueueMessageInPipe(string msg) {
             /// static method that wrap the creating of a named pipe for communicate with main instance
             /// Data are pushed tp the pipe in the following order.
-            ///     - Lenght of string with ip address on 4 bytes
-            ///     - IP address
             ///     - Lenght of path string on 4 bytes
             ///     - Path
-
-            System.IO.Pipes.NamedPipeServerStream pipe = new System.IO.Pipes.NamedPipeServerStream("Jubilant_Waffle", System.IO.Pipes.PipeDirection.Out);
+            System.IO.Pipes.NamedPipeClientStream pipe;
+            try {
+                pipe = new System.IO.Pipes.NamedPipeClientStream("Jubilant_Waffle");
+                pipe.Connect();
+            }
+            catch (Exception e) {
+                //TODO Handle error
+                MessageBox.Show(e.Message);
+                return;
+            }
+            if (!pipe.IsConnected) {
+                //TODO Handle error
+                return;
+            }   
             byte[] data;
-
+            /*
             #region Push IP
             data = System.BitConverter.GetBytes(ip.Length);
             pipe.Write(data, 0, data.Length);
             data = System.Text.Encoding.ASCII.GetBytes(ip);
             pipe.Write(data, 0, data.Length);
             #endregion
+            */
 
             #region Push path
             data = System.BitConverter.GetBytes(msg.Length);
@@ -52,18 +118,17 @@ namespace Jubilant_Waffle {
             /// This method wait for connection on pipe and fill the list of file to be sent
             /// Data are pushed into the pipe using the EnqueueMessageInPipe method 
             /// and thus are read in the following order
-            ///     - Lenght of string with ip address on 4 bytes
-            ///     - IP address
             ///     - Lenght of path string on 4 bytes
             ///     - Path
-
+            System.Diagnostics.Debug.WriteLine("Read Pipe");
             byte[] len = new byte[4];
             byte[] data;
             int lenght;
-            string ip, path;
+            string path;
             FileToSend fts;
             while (true) {
                 nps.WaitForConnection();
+                /*
                 #region Read IP address
                 nps.Read(len, 0, 4);
                 lenght = System.BitConverter.ToInt32(len, 0);
@@ -71,6 +136,7 @@ namespace Jubilant_Waffle {
                 nps.Read(data, 0, lenght);
                 ip = System.Text.Encoding.ASCII.GetString(data);
                 #endregion
+                */
                 #region Read path
                 nps.Read(len, 0, 4);
                 lenght = System.BitConverter.ToInt32(len, 0);
@@ -78,9 +144,11 @@ namespace Jubilant_Waffle {
                 nps.Read(data, 0, lenght);
                 path = System.Text.Encoding.ASCII.GetString(data);
                 #endregion
+                #region Ask to select a user
+                //TODO implement GUI
+                #endregion
                 #region Push new file
                 fts = new FileToSend();
-                fts.ip = ip;
                 fts.path = path;
                 lock (files) {
                     files.AddLast(fts);
@@ -91,6 +159,8 @@ namespace Jubilant_Waffle {
             }
         }
         private void ConsumeFileList() {
+
+            System.Diagnostics.Debug.WriteLine("Consume File List");
             FileToSend fts;
             while (true) {
                 lock (files) {
@@ -204,6 +274,8 @@ namespace Jubilant_Waffle {
 
         private void ListenForConnections() {
             /// Listen for user in/out in the LAN
+            /// 
+            System.Diagnostics.Debug.WriteLine("Listen for connections...");
             while (true) {
                 System.Net.IPEndPoint endpoint = new System.Net.IPEndPoint(0, 0); // The endpoint will identify the user that sent the message
                 byte[] data = udp.Receive(ref endpoint); //Wait for a new message. It is blocking
@@ -350,11 +422,13 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Add the user to the list of known
-            if (msg == "MARIO") {
-                users.Add(userAddress.ToString(), new User(name, userAddress.ToString(), "user_pic/" + userAddress.ToString() + ".png"));
-            }
-            else {
-                users.Add(userAddress.ToString(), new User(name, userAddress.ToString()));
+            lock (users) {
+                if (msg == "MARIO") {
+                    users.Add(userAddress.ToString(), new User(name, userAddress.ToString(), "user_pic/" + userAddress.ToString() + ".png"));
+                }
+                else {
+                    users.Add(userAddress.ToString(), new User(name, userAddress.ToString()));
+                }
             }
             #endregion
         }

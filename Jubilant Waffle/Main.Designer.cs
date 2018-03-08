@@ -39,7 +39,6 @@
             // 
             this.DefaultFolderIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.DefaultFolderIcon.BackColor = System.Drawing.Color.White;
-            this.DefaultFolderIcon.ErrorImage = null;
             this.DefaultFolderIcon.ImageLocation = "folder_default_off.png";
             this.DefaultFolderIcon.Location = new System.Drawing.Point(315, 0);
             this.DefaultFolderIcon.Name = "DefaultFolderIcon";

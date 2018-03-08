@@ -19,18 +19,11 @@ namespace Jubilant_Waffle {
         static Main mainbox;
         private static System.Threading.Mutex mutex = null;
         [STAThread]
-        static void Main() {
+        static void Main(string[] argv) {
 
             #region
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            #endregion
-            #region Server
-            //TODO Name should be taken from a config file
-            server = new Server(20000, "Alessandro");
-            #endregion
-            #region Client
-            client = new Client();
             #endregion
             #region Make the application single instance
             // code at http://www.c-sharpcorner.com/UploadFile/f9f215/how-to-restrict-the-application-to-just-one-instance/
@@ -38,8 +31,19 @@ namespace Jubilant_Waffle {
             const string appName = "Jubilant Waffle";
             mutex = new System.Threading.Mutex(true, appName, out createdNew);
             if (!createdNew) {
+                if(argv.Length > 0) {
+                    string path = System.String.Join(" ", argv);
+                    Client.EnqueueMessageInPipe(path);
+                }
                 return;
             }
+            #endregion
+            #region Server
+            //TODO Name should be taken from a config file
+            server = new Server(20000, "Alessandro");
+            #endregion
+            #region Client
+            client = new Client(20000);
             #endregion
             #region main box
             mainbox = new Main(server, client);
