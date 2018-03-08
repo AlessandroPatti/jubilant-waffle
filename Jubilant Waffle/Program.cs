@@ -33,7 +33,7 @@ namespace Jubilant_Waffle {
             if (!createdNew) {
                 if(argv.Length > 0) {
                     string path = System.String.Join(" ", argv);
-                    Client.EnqueueMessageInPipe(path);
+                    Client.EnqueueMessage(path);
                 }
                 return;
             }
@@ -43,7 +43,7 @@ namespace Jubilant_Waffle {
             server = new Server(20000, "Alessandro");
             #endregion
             #region Client
-            client = new Client(20000);
+            client = new Client();
             #endregion
             #region main box
             mainbox = new Main(server, client);

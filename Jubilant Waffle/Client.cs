@@ -19,35 +19,17 @@ namespace Jubilant_Waffle {
         System.Collections.Generic.LinkedList<FileToSend> files;
         System.Net.Sockets.UdpClient udp;
         /* Pipe used to communicate with other istances (i.e. right click send) */
-        System.IO.Pipes.NamedPipeServerStream nps;
         bool _cancelCurrent = false; // This is used to undo the current transfer
         string defaultImagePath; //Use this image if none is selected
-        public Client(int port) {
-
+        System.Net.Sockets.TcpListener instancesListener;
+        const int port = 20000;
+        public Client() {
             System.Diagnostics.Debug.WriteLine("Client");
             udp = new System.Net.Sockets.UdpClient(port);
             users = new System.Collections.Generic.Dictionary<string, User>();
             files = new System.Collections.Generic.LinkedList<FileToSend>();
-            #region Initialize pipe
-            try {
-                var pSecurity = new System.IO.Pipes.PipeSecurity();
-                pSecurity.AddAccessRule(new System.IO.Pipes.PipeAccessRule("Everyone",
-                    System.IO.Pipes.PipeAccessRights.ReadWrite,
-                    System.Security.AccessControl.AccessControlType.Allow));
-                nps = new System.IO.Pipes.NamedPipeServerStream("Jubilant_Waffle",
-                    System.IO.Pipes.PipeDirection.InOut,
-                    1,
-                    System.IO.Pipes.PipeTransmissionMode.Byte,
-                    System.IO.Pipes.PipeOptions.None,
-                    512, 512,
-                    pSecurity,
-                    System.IO.HandleInheritability.None
-                    );
-            }
-            catch (Exception e) {
-                //TODO handle error
-                MessageBox.Show(e.Message);
-            }
+            #region Initiliaze socket to list for local connections
+            instancesListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port + 1);
             #endregion
             #region Initialize Form
             this.StartPosition = FormStartPosition.Manual;
@@ -55,7 +37,7 @@ namespace Jubilant_Waffle {
                                    (Screen.PrimaryScreen.WorkingArea.Height) / 2 - this.Width);
             this.ShowInTaskbar = false;
             InitializeComponent();
-
+            UserListView.View = View.LargeIcon;
             /* Image ListView */
             defaultImagePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\default-user-image.png";
             #endregion
@@ -68,94 +50,57 @@ namespace Jubilant_Waffle {
             #region Execute routines
             System.Threading.Thread ConsumeFileListThread = new System.Threading.Thread(() => ConsumeFileList());
             System.Threading.Thread ListenForConnectionsThread = new System.Threading.Thread(() => ListenForConnections());
-            System.Threading.Thread ReadPipeThread = new System.Threading.Thread(() => ReadPipe());
+            System.Threading.Thread ReadMQThread = new System.Threading.Thread(() => ReadMS());
             ConsumeFileListThread.Name = "ConsumeFileList";
             ListenForConnectionsThread.Name = "ListenForConnections";
-            ReadPipeThread.Name = "ReadPipe";
+            ReadMQThread.Name = "ReadMQ";
             ConsumeFileListThread.Start();
             ListenForConnectionsThread.Start();
-            ReadPipeThread.Start();
+            ReadMQThread.Start();
             #endregion
         }
-        
-        static public void EnqueueMessageInPipe(string msg) {
-            /// static method that wrap the creating of a named pipe for communicate with main instance
-            /// Data are pushed tp the pipe in the following order.
-            ///     - Lenght of path string on 4 bytes
-            ///     - Path
-            System.IO.Pipes.NamedPipeClientStream pipe;
-            try {
-                pipe = new System.IO.Pipes.NamedPipeClientStream("Jubilant_Waffle");
-                pipe.Connect();
-            }
-            catch (Exception e) {
-                //TODO Handle error
-                MessageBox.Show(e.Message);
-                return;
-            }
-            if (!pipe.IsConnected) {
-                //TODO Handle error
-                return;
-            }   
-            byte[] data;
-            /*
-            #region Push IP
-            data = System.BitConverter.GetBytes(ip.Length);
-            pipe.Write(data, 0, data.Length);
-            data = System.Text.Encoding.ASCII.GetBytes(ip);
-            pipe.Write(data, 0, data.Length);
-            #endregion
-            */
 
-            #region Push path
-            data = System.BitConverter.GetBytes(msg.Length);
-            pipe.Write(data, 0, data.Length);
+        static public void EnqueueMessage(string msg) {
+            System.Net.Sockets.TcpClient client;
+            byte[] data;
+
+            client = new System.Net.Sockets.TcpClient();
+            client.Connect(System.Net.IPAddress.Loopback, port + 1);
+            data=System.BitConverter.GetBytes(msg.Length);
+            client.GetStream().Write(data, 0, data.Length);
             data = System.Text.Encoding.ASCII.GetBytes(msg);
-            pipe.Write(data, 0, data.Length);
-            #endregion
+            client.GetStream().Write(data, 0, data.Length);
+            try {
+                client.GetStream().Read(data, 0, 1);
+            }
+            catch {
+                //TODO handle
+                return;
+            }
+            MessageBox.Show("Closing");
         }
-        private void ReadPipe() {
-            /// This method wait for connection on pipe and fill the list of file to be sent
-            /// Data are pushed into the pipe using the EnqueueMessageInPipe method 
-            /// and thus are read in the following order
-            ///     - Lenght of path string on 4 bytes
-            ///     - Path
-            System.Diagnostics.Debug.WriteLine("Read Pipe");
-            byte[] len = new byte[4];
-            byte[] data;
+        private void ReadMS() {
+            string msg;
+            byte[] data, len = new byte[4];
             int lenght;
-            string path;
-            FileToSend fts;
+            System.Net.Sockets.TcpClient client;
+            instancesListener.Start();
             while (true) {
-                nps.WaitForConnection();
-                /*
-                #region Read IP address
-                nps.Read(len, 0, 4);
+                #region read message from queue
+                client = instancesListener.AcceptTcpClient();
+                client.GetStream().Read(len, 0, len.Length);
                 lenght = System.BitConverter.ToInt32(len, 0);
-                data = new byte[lenght];
-                nps.Read(data, 0, lenght);
-                ip = System.Text.Encoding.ASCII.GetString(data);
-                #endregion
-                */
-                #region Read path
-                nps.Read(len, 0, 4);
-                lenght = System.BitConverter.ToInt32(len, 0);
-                data = new byte[lenght];
-                nps.Read(data, 0, lenght);
-                path = System.Text.Encoding.ASCII.GetString(data);
-                #endregion
-                #region Ask to select a user
-                //TODO implement GUI
-                #endregion
-                #region Push new file
-                fts = new FileToSend();
-                fts.path = path;
-                lock (files) {
-                    files.AddLast(fts);
-                    System.Threading.Monitor.PulseAll(files);
-                }
-                #endregion
 
+                data = new byte[lenght];
+                client.GetStream().Read(data, 0, data.Length);
+                msg = System.Text.Encoding.ASCII.GetString(data);
+                client.Close();
+                #endregion
+                #region Ask for user
+                
+                #endregion
+                #region Enqueue the file
+                #endregion
             }
         }
         private void ConsumeFileList() {
