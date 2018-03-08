@@ -23,7 +23,16 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            this.UserListView = new System.Windows.Forms.ListView();
             this.SuspendLayout();
+            // 
+            // UserListView
+            // 
+            this.UserListView.Location = new System.Drawing.Point(12, 12);
+            this.UserListView.Name = "UserListView";
+            this.UserListView.Size = new System.Drawing.Size(760, 537);
+            this.UserListView.TabIndex = 0;
+            this.UserListView.UseCompatibleStateImageBehavior = false;
             // 
             // Client
             // 
@@ -31,6 +40,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(784, 561);
+            this.Controls.Add(this.UserListView);
             this.Name = "Client";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Client";
@@ -39,10 +49,7 @@
         }
 
         #endregion
-        private System.Windows.Forms.ColumnHeader ColumnOne;
-        private System.Windows.Forms.ColumnHeader ColumnTwo;
-        private System.Windows.Forms.ColumnHeader ColumnThree;
-        private System.Windows.Forms.ColumnHeader ColumnFour;
-        private System.Windows.Forms.ColumnHeader ColumnFive;
+
+        private System.Windows.Forms.ListView UserListView;
     }
 }

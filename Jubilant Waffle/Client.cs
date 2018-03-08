@@ -28,18 +28,18 @@ namespace Jubilant_Waffle {
             udp = new System.Net.Sockets.UdpClient(port);
             users = new System.Collections.Generic.Dictionary<string, User>();
             files = new System.Collections.Generic.LinkedList<FileToSend>();
-            #region Initiliaze socket to list for local connections
-            instancesListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port + 1);
-            #endregion
             #region Initialize Form
-            this.StartPosition = FormStartPosition.Manual;
-            this.Location = new System.Drawing.Point((Screen.PrimaryScreen.WorkingArea.Width) / 2 - this.Width,
-                                   (Screen.PrimaryScreen.WorkingArea.Height) / 2 - this.Width);
-            this.ShowInTaskbar = false;
             InitializeComponent();
+            this.ShowInTaskbar = false;
             UserListView.View = View.LargeIcon;
+            this.ShowInTaskbar = false;
+            this.Hide();
             /* Image ListView */
             defaultImagePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\default-user-image.png";
+            UserListView.View = View.LargeIcon;
+            #endregion
+            #region Initiliaze socket to list for local connections
+            instancesListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port + 1);
             #endregion
             #region Test Users
             users.Add("192.168.1.1", new User("Mario", "192.168.1.1"));
@@ -66,7 +66,7 @@ namespace Jubilant_Waffle {
 
             client = new System.Net.Sockets.TcpClient();
             client.Connect(System.Net.IPAddress.Loopback, port + 1);
-            data=System.BitConverter.GetBytes(msg.Length);
+            data = System.BitConverter.GetBytes(msg.Length);
             client.GetStream().Write(data, 0, data.Length);
             data = System.Text.Encoding.ASCII.GetBytes(msg);
             client.GetStream().Write(data, 0, data.Length);
@@ -77,7 +77,6 @@ namespace Jubilant_Waffle {
                 //TODO handle
                 return;
             }
-            MessageBox.Show("Closing");
         }
         private void ReadMS() {
             string msg;
@@ -97,7 +96,22 @@ namespace Jubilant_Waffle {
                 client.Close();
                 #endregion
                 #region Ask for user
-                
+                ImageList imgl = new ImageList();
+                Image img;
+                imgl.ImageSize = new Size(50, 50);
+                UserListView.Clear();
+                foreach (User u in users.Values) {
+                    img = Image.FromFile(u.imagePath != null ? u.imagePath : defaultImagePath);
+                    imgl.Images.Add(img);
+                }
+                UserListView.LargeImageList = imgl;
+                var i = 0;
+                foreach (User u in users.Values) {
+                    UserListView.Items.Add(u.name, i++);
+                }
+
+
+                this.Show();
                 #endregion
                 #region Enqueue the file
                 #endregion
