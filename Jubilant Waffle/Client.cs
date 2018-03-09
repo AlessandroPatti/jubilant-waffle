@@ -30,11 +30,8 @@ namespace Jubilant_Waffle {
             files = new System.Collections.Generic.LinkedList<FileToSend>();
             #region Initialize Form
             InitializeComponent();
-            this.ShowInTaskbar = false;
-            UserListView.View = View.LargeIcon;
             /* Image ListView */
             defaultImagePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\default-user-image.png";
-            UserListView.View = View.LargeIcon;
             #endregion
             #region Initiliaze socket to list for local connections
             instancesListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port + 1);
@@ -77,12 +74,12 @@ namespace Jubilant_Waffle {
                 UserListView.Clear();
                 foreach (User u in users.Values) {
                     img = Image.FromFile(u.imagePath != null ? u.imagePath : defaultImagePath);
-                    imgl.Images.Add(img);
+                    imgl.Images.Add(u.ip, img);
                 }
                 UserListView.LargeImageList = imgl;
                 var i = 0;
                 foreach (User u in users.Values) {
-                    UserListView.Items.Add(u.name, i++);
+                    UserListView.Items.Add(u.ip, u.name, i++);
                 }
                 this.Show();
             }
@@ -107,11 +104,12 @@ namespace Jubilant_Waffle {
             }
         }
         private void ReadMS() {
-            string msg;
-            byte[] data, len = new byte[4];
-            int lenght;
+            string msg, path;
+            byte[] data, len = new byte[5];
+            int lenght, count;
             System.Net.Sockets.TcpClient client;
             instancesListener.Start();
+            System.IO.Pipes.NamedPipeServerStream npss;
             while (true) {
                 #region read message from queue
                 client = instancesListener.AcceptTcpClient();
@@ -120,15 +118,40 @@ namespace Jubilant_Waffle {
 
                 data = new byte[lenght];
                 client.GetStream().Read(data, 0, data.Length);
-                msg = System.Text.Encoding.ASCII.GetString(data);
+                path = System.Text.Encoding.ASCII.GetString(data);
                 client.Close();
                 #endregion
+                #region Ask user
+                npss = new System.IO.Pipes.NamedPipeServerStream("JubilantWaffleInternal");
                 UpdateList();
-                #region Wait for user click
-                    
+                npss.WaitForConnection();
+                /* Read response 
+                 *
+                 * It is sent as
+                 *      - Count: number of users selected
+                 *      - length 1st ip address
+                 *      - 1st ip address
+                 *      - ...
+                 */
+
+                npss.Read(len, 0, 4);
+                count = System.BitConverter.ToInt32(len, 0);
+                List<FileToSend> tmp = new List<FileToSend>();
+                for (var i = 0; i < count; i++) {
+                    npss.Read(len, 0, 4);
+                    lenght = System.BitConverter.ToInt32(len, 0);
+                    data = new byte[lenght];
+                    npss.Read(data, 0, data.Length);
+                    msg = System.Text.Encoding.ASCII.GetString(data);
+                    tmp.Add(new FileToSend { path = path, ip = msg });
+                }
+                lock (files) {
+                    foreach (FileToSend file in tmp) {
+                        files.AddFirst(file);
+                    }
+                }
                 #endregion
-                #region Enqueue the file
-                #endregion
+
             }
         }
         private void ConsumeFileList() {
@@ -405,6 +428,16 @@ namespace Jubilant_Waffle {
             }
             #endregion
         }
-        
+
+        private void ConfirmSend(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                throw new NotImplementedException();
+            }
+        }
+        private void UndoSend(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                throw new NotImplementedException();
+            }
+        }
     }
 }
