@@ -10,7 +10,7 @@ namespace Jubilant_Waffle {
         /// The main entry point for the application.
         /// </summary>
 
-
+        static public User self; // Represent the user running the application
         static public Server server;
         static public Client client;
         static public Main mainbox;
@@ -39,11 +39,10 @@ namespace Jubilant_Waffle {
                 return;
             }
             #endregion
-            #region Server
+            #region Setup application
             //TODO Name should be taken from a config file
-            server = new Server(20000, "Alessandro");
-            #endregion
-            #region Client
+            self = new User("Alessandro", GetMyIP(), null);
+            server = new Server();
             client = new Client();
             #endregion
             #region main box
@@ -162,5 +161,17 @@ namespace Jubilant_Waffle {
             return true;
         }
 
+
+
+        static private string GetMyIP() {
+            var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+            foreach (var ip in host.AddressList) {
+                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
+                    return ip.ToString();
+                }
+            }
+            throw new Exception("No network adapters with an IPv4 address in the system!");
+
+        }
     }
 }

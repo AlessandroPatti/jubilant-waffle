@@ -1,7 +1,7 @@
 ﻿using System;
 namespace Jubilant_Waffle {
     public class Server {
-        User self; // Represent the user running the application
+        
         #region UDPClient
         /* The UDP client is only in charge of sending periodically an announcement if the the status is online */
         System.Net.Sockets.UdpClient udp; //The client
@@ -34,11 +34,8 @@ namespace Jubilant_Waffle {
                 _status = value;
             }
         }
-
-        public Server(int port, string name, string image = null) {
-            #region Setup personal info
-            self = new User(name, "127.0.0.1", image);
-            #endregion
+        const int port = 20000;
+        public Server() {
             #region UDP Client/Server and Timer setup
             udp = new System.Net.Sockets.UdpClient();
             udp.Connect(System.Net.IPAddress.Broadcast, port); //Set the default IP address. It is the broadcast address and the port passed to the constructor
@@ -120,7 +117,7 @@ namespace Jubilant_Waffle {
             byte[] data;
             long imageLenght;
             #region Send response
-            if (self.imagePath != null)
+            if (Program.self.imagePath != null)
                 data = System.Text.Encoding.ASCII.GetBytes("MARIO");
             else
                 data = System.Text.Encoding.ASCII.GetBytes("LUIGI");
@@ -134,7 +131,7 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Send name lenght
-            data = System.BitConverter.GetBytes(self.name.Length);
+            data = System.BitConverter.GetBytes(Program.self.name.Length);
             try {
                 client.GetStream().Write(data, 0, data.Length);
             }
@@ -145,7 +142,7 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Send name
-            data = System.Text.Encoding.ASCII.GetBytes(self.name);
+            data = System.Text.Encoding.ASCII.GetBytes(Program.self.name);
             try {
                 client.GetStream().Write(data, 0, data.Length);
             }
@@ -155,9 +152,9 @@ namespace Jubilant_Waffle {
                 return;
             }
             #endregion
-            if (self.imagePath != null) {
+            if (Program.self.imagePath != null) {
                 #region Send image lenght
-                imageLenght = (new System.IO.FileInfo(self.imagePath)).Length;
+                imageLenght = (new System.IO.FileInfo(Program.self.imagePath)).Length;
                 data = System.BitConverter.GetBytes(imageLenght);
                 try {
                     client.GetStream().Write(data, 0, data.Length);
@@ -169,7 +166,7 @@ namespace Jubilant_Waffle {
                 }
                 #endregion
                 #region Send Image
-                client.Client.SendFile(self.imagePath);
+                client.Client.SendFile(Program.self.imagePath);
                 #endregion
             }
         }

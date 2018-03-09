@@ -293,16 +293,6 @@ namespace Jubilant_Waffle {
             #endregion
         }
 
-        private string GetMyIp() {
-            var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
-            foreach (var ip in host.AddressList) {
-                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
-                    return ip.ToString();
-                }
-            }
-            throw new Exception("No network adapters with an IPv4 address in the system!");
-
-        }
         private void ListenForConnections() {
             /// Listen for user in/out in the LAN
             /// 
@@ -314,7 +304,7 @@ namespace Jubilant_Waffle {
                 switch (msg) {
                     /* New user connection */
                     case "HELLO":
-                        if (endpoint.Address.ToString() == GetMyIp())
+                        if (endpoint.Address.ToString() == Program.self.ip)
                             continue;
                         if (!users.ContainsKey(endpoint.Address.ToString())) {
                             /* 

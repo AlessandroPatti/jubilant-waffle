@@ -85,7 +85,6 @@ namespace Jubilant_Waffle {
                 this.IconToolTip.SetToolTip(this.DefaultFolderIcon, tooltip);
             }
         }
-
         private void ToggleAutosave(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 Program.server._autoSave = !Program.server._autoSave;
