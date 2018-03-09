@@ -32,8 +32,6 @@ namespace Jubilant_Waffle {
             InitializeComponent();
             this.ShowInTaskbar = false;
             UserListView.View = View.LargeIcon;
-            this.ShowInTaskbar = false;
-            this.Hide();
             /* Image ListView */
             defaultImagePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\default-user-image.png";
             UserListView.View = View.LargeIcon;
@@ -46,7 +44,13 @@ namespace Jubilant_Waffle {
             users.Add("192.168.1.2", new User("Luigi", "192.168.1.2"));
             users.Add("192.168.1.3", new User("Antonio", "192.168.1.3"));
             #endregion
-
+            #region Calling show to fire load
+            Size tmp = this.Size;
+            this.Size = new Size(0, 0);
+            this.Show();
+            this.Hide();
+            this.Size = tmp;
+            #endregion
             #region Execute routines
             System.Threading.Thread ConsumeFileListThread = new System.Threading.Thread(() => ConsumeFileList());
             System.Threading.Thread ListenForConnectionsThread = new System.Threading.Thread(() => ListenForConnections());
@@ -58,6 +62,30 @@ namespace Jubilant_Waffle {
             ListenForConnectionsThread.Start();
             ReadMQThread.Start();
             #endregion
+        }
+
+        delegate void UpdateListCallback();
+        private void UpdateList() {
+            if (this.InvokeRequired) {
+                UpdateListCallback callback = new UpdateListCallback(UpdateList);
+                UserListView.Invoke(callback);
+            }
+            else {
+                ImageList imgl = new ImageList();
+                Image img;
+                imgl.ImageSize = new Size(200, 200);
+                UserListView.Clear();
+                foreach (User u in users.Values) {
+                    img = Image.FromFile(u.imagePath != null ? u.imagePath : defaultImagePath);
+                    imgl.Images.Add(img);
+                }
+                UserListView.LargeImageList = imgl;
+                var i = 0;
+                foreach (User u in users.Values) {
+                    UserListView.Items.Add(u.name, i++);
+                }
+                this.Show();
+            }
         }
 
         static public void EnqueueMessage(string msg) {
@@ -95,23 +123,9 @@ namespace Jubilant_Waffle {
                 msg = System.Text.Encoding.ASCII.GetString(data);
                 client.Close();
                 #endregion
-                #region Ask for user
-                ImageList imgl = new ImageList();
-                Image img;
-                imgl.ImageSize = new Size(50, 50);
-                UserListView.Clear();
-                foreach (User u in users.Values) {
-                    img = Image.FromFile(u.imagePath != null ? u.imagePath : defaultImagePath);
-                    imgl.Images.Add(img);
-                }
-                UserListView.LargeImageList = imgl;
-                var i = 0;
-                foreach (User u in users.Values) {
-                    UserListView.Items.Add(u.name, i++);
-                }
-
-
-                this.Show();
+                UpdateList();
+                #region Wait for user click
+                    
                 #endregion
                 #region Enqueue the file
                 #endregion
@@ -391,5 +405,6 @@ namespace Jubilant_Waffle {
             }
             #endregion
         }
+        
     }
 }

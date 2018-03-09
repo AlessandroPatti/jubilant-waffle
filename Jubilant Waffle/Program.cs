@@ -22,7 +22,8 @@ namespace Jubilant_Waffle {
         static void Main(string[] argv) {
 
             #region
-            Application.EnableVisualStyles();
+            //If the following line is enable ImageList is not going to be populated
+            //Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             #endregion
             #region Make the application single instance
