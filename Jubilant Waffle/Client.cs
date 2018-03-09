@@ -30,6 +30,7 @@ namespace Jubilant_Waffle {
             files = new System.Collections.Generic.LinkedList<FileToSend>();
             #region Initialize Form
             InitializeComponent();
+            this.FormClosing += PreventClose;
             /* Image ListView */
             defaultImagePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\default-user-image.png";
             #endregion
@@ -61,6 +62,10 @@ namespace Jubilant_Waffle {
             #endregion
         }
 
+        private void PreventClose(object sender, FormClosingEventArgs e) {
+            e.Cancel = true;
+        }
+
         delegate void UpdateListCallback();
         private void UpdateList() {
             if (this.InvokeRequired) {
@@ -72,16 +77,20 @@ namespace Jubilant_Waffle {
                 Image img;
                 imgl.ImageSize = new Size(200, 200);
                 UserListView.Clear();
-                foreach (User u in users.Values) {
-                    img = Image.FromFile(u.imagePath != null ? u.imagePath : defaultImagePath);
-                    imgl.Images.Add(u.ip, img);
-                }
-                UserListView.LargeImageList = imgl;
-                var i = 0;
-                foreach (User u in users.Values) {
-                    UserListView.Items.Add(u.ip, u.name, i++);
+                lock (users) {
+                    foreach (User u in users.Values) {
+                        img = Image.FromFile(u.imagePath != null ? u.imagePath : defaultImagePath);
+                        imgl.Images.Add(u.ip, img);
+                    }
+                    UserListView.LargeImageList = imgl;
+                    var i = 0;
+                    foreach (User u in users.Values) {
+                        UserListView.Items.Add(u.ip, u.name, i++);
+                        UserListView.Items[i - 1].ImageKey = u.ip;
+                    }
                 }
                 this.Show();
+                this.ShowInTaskbar = true;
             }
         }
 
@@ -136,6 +145,8 @@ namespace Jubilant_Waffle {
 
                 npss.Read(len, 0, 4);
                 count = System.BitConverter.ToInt32(len, 0);
+                #endregion
+                #region Read Users
                 List<FileToSend> tmp = new List<FileToSend>();
                 for (var i = 0; i < count; i++) {
                     npss.Read(len, 0, 4);
@@ -145,13 +156,16 @@ namespace Jubilant_Waffle {
                     msg = System.Text.Encoding.ASCII.GetString(data);
                     tmp.Add(new FileToSend { path = path, ip = msg });
                 }
+                npss.Close();
+                #endregion
+                #region Enqueue files
                 lock (files) {
                     foreach (FileToSend file in tmp) {
                         files.AddFirst(file);
                     }
+                    System.Threading.Monitor.PulseAll(files);
                 }
                 #endregion
-
             }
         }
         private void ConsumeFileList() {
@@ -171,7 +185,7 @@ namespace Jubilant_Waffle {
                 SendFile(fts.path, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), 20000));
             }
         }
-        private void SendFile(string path, System.Net.IPEndPoint iPEndPoint) {
+        private void SendFile(string path, System.Net.IPEndPoint IPEndPoint) {
             /// The file is sent using the following sintax
             ///     - Control message 'FILE!'
             ///     - File name lenght on 4 bytes
@@ -191,6 +205,7 @@ namespace Jubilant_Waffle {
             #region Open connection
             data = System.Text.Encoding.ASCII.GetBytes("FILE!");
             try {
+                dataChannel.Connect(IPEndPoint);
                 dataChannel.GetStream().Write(data, 0, 5);
             }
             catch (System.Net.Sockets.SocketException) {
@@ -431,12 +446,34 @@ namespace Jubilant_Waffle {
 
         private void ConfirmSend(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                throw new NotImplementedException();
+                byte[] data;
+                System.IO.Pipes.NamedPipeClientStream npcs = new System.IO.Pipes.NamedPipeClientStream("JubilantWaffleInternal");
+                npcs.Connect();
+                data = System.BitConverter.GetBytes(UserListView.SelectedItems.Count);
+                npcs.Write(data, 0, data.Length);
+                foreach (ListViewItem item in UserListView.SelectedItems) {
+                    data = System.BitConverter.GetBytes(item.ImageKey.Length);
+                    npcs.Write(data, 0, data.Length);
+                    data = System.Text.Encoding.ASCII.GetBytes(item.ImageKey);
+                    npcs.Write(data, 0, data.Length);
+                }
+                npcs.WaitForPipeDrain();
+                npcs.Close();
+                this.Hide();
+                this.ShowInTaskbar = false;
             }
         }
         private void UndoSend(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                throw new NotImplementedException();
+                byte[] data;
+                System.IO.Pipes.NamedPipeClientStream npcs = new System.IO.Pipes.NamedPipeClientStream("JubilantWaffleInternal");
+                npcs.Connect();
+                data = System.BitConverter.GetBytes(0);
+                npcs.Write(data, 0, data.Length);
+                npcs.WaitForPipeDrain();
+                npcs.Close();
+                this.Hide();
+                this.ShowInTaskbar = false;
             }
         }
     }
