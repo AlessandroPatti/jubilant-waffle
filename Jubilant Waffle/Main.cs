@@ -10,11 +10,11 @@ using System.Windows.Forms;
 
 namespace Jubilant_Waffle {
     public partial class Main : Form {
-        Server server;
-        Client client;
-        public Main(Server server, Client client) {
-            this.server = server;
-            this.client = client;
+        public Dictionary<string, ProgressBar> ProgressBarsIn;
+        public Dictionary<string, ProgressBar> ProgressBarsOut;
+        //private Pen pen;
+        private Graphics graphics;
+        public Main() {
             InitializeComponent();
             #region Place box at bottom right
             this.ShowInTaskbar = false;
@@ -41,43 +41,119 @@ namespace Jubilant_Waffle {
             AutoSaveIcon.MouseLeave += (object s, EventArgs e) => AutoSaveIcon.BackColor = Color.White;
             SettingsIcon.MouseEnter += (object s, EventArgs e) => SettingsIcon.BackColor = Color.LightBlue;
             SettingsIcon.MouseLeave += (object s, EventArgs e) => SettingsIcon.BackColor = Color.White;
+            TransfersOutLabel.MouseEnter += (object s, EventArgs e) => TransfersOutLabel.BackColor = Color.LightBlue;
+            TransfersOutLabel.MouseLeave += (object s, EventArgs e) => TransfersOutLabel.BackColor = Color.White;
+            TransfersInLabel.MouseEnter += (object s, EventArgs e) => TransfersInLabel.BackColor = Color.LightBlue;
+            TransfersInLabel.MouseLeave += (object s, EventArgs e) => TransfersInLabel.BackColor = Color.White;
             /* Reacts to clicks */
             DefaultFolderIcon.MouseClick += ToggleDefaultFolder;
             AutoSaveIcon.MouseClick += ToggleAutosave;
             #endregion
-            
+            #region Progress Bars
+            ProgressBarsIn = new Dictionary<string, ProgressBar>();
+            ProgressBarsOut = new Dictionary<string, ProgressBar>();
+            #endregion
+            #region Initiliaze graphics
+            graphics = this.CreateGraphics();
+            #endregion
         }
-        
+
+        public void AddProgressBarIn(string name) {
+            ProgressBar pbar = new ProgressBar();
+            pbar.Name = name;
+            int i = 0;
+            while (ProgressBarsIn.ContainsKey(name + i.ToString())) {
+                i++;
+            }
+            ProgressBarsIn.Add(name + i.ToString(), pbar);
+        }
+        public void AddProgressBarOut(string name) {
+            ProgressBar pbar = new ProgressBar();
+            pbar.Name = name;
+            int i = 0;
+            while (ProgressBarsOut.ContainsKey(name + i.ToString())) {
+                i++;
+            }
+            ProgressBarsOut.Add(name + i.ToString(), pbar);
+        }
+
         private void ToggleDefaultFolder(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                server._useDefault = !server._useDefault;
-                DefaultFolderIcon.ImageLocation = server._useDefault ? "folder_default_on.png" : "folder_default_off.png";
-                string tooltip = server._useDefault ? "Disable default folder" : "Enable default folder";
+                Program.server._useDefault = !Program.server._useDefault;
+                DefaultFolderIcon.ImageLocation = Program.server._useDefault ? "folder_default_on.png" : "folder_default_off.png";
+                string tooltip = Program.server._useDefault ? "Disable default folder" : "Enable default folder";
                 this.IconToolTip.SetToolTip(this.DefaultFolderIcon, tooltip);
             }
         }
 
         private void ToggleAutosave(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                server._autoSave = !server._autoSave;
-                AutoSaveIcon.ImageLocation = server._autoSave ? "autosave_on.png" : "autosave_off.png";
-                string tooltip = server._autoSave ? "Ask permission for each transfer" : "Automatically accept incoming requests";
+                Program.server._autoSave = !Program.server._autoSave;
+                AutoSaveIcon.ImageLocation = Program.server._autoSave ? "autosave_on.png" : "autosave_off.png";
+                string tooltip = Program.server._autoSave ? "Ask permission for each transfer" : "Automatically accept incoming requests";
                 this.IconToolTip.SetToolTip(this.AutoSaveIcon, tooltip);
             }
         }
 
-        private void Main_Paint(object sender, PaintEventArgs e) {
-            #region create separator
-            System.Drawing.Pen myPen = new System.Drawing.Pen(System.Drawing.Color.LightBlue);
-            System.Drawing.Graphics formGraphics = this.CreateGraphics();
-            formGraphics.DrawLine(myPen, 0, 37, 500, 37);
-            myPen.Dispose();
-            formGraphics.Dispose();
-            #endregion
+        private void PreventClose(object sender, FormClosingEventArgs e) {
+            e.Cancel = true;
         }
 
-        private void ShowProfile(object sender, EventArgs e) {
+        private void HideOnClickOut(object sender, EventArgs e) {
+            this.Hide();
+        }
 
+        private void ShowTransferOut(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                #region Show Transfers
+                TransferInBox.Hide();
+                TransferOutBox.Show();
+                this.RaisePaintEvent(this, null);
+                #endregion
+            }
+        }
+        private void ShowTransferIn(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                #region Show Transfers
+                TransferOutBox.Hide();
+                TransferInBox.Show();
+                this.RaisePaintEvent(this, null);
+                #endregion              
+            }
+        }
+
+
+
+        private void CreateSeparator() {
+            System.Drawing.Pen myPen = new System.Drawing.Pen(System.Drawing.Color.LightBlue);
+            graphics.DrawLine(myPen, 0, 37, 500, 37);
+            myPen.Dispose();
+        }
+        private void CreateLineBelow(Control elem) {
+            System.Drawing.Pen myPen = new System.Drawing.Pen(System.Drawing.Color.CadetBlue, 5);
+            int bottom = elem.Location.Y + elem.Height;
+            int left = elem.Location.X + 15;
+            int right = elem.Location.X + elem.Width - 15;
+            graphics.Clear(Color.White);
+            CreateSeparator();
+            graphics.DrawLine(myPen, left, bottom, right, bottom);
+            myPen.Dispose();
+        }
+        private void OnPaint(object sender, System.Windows.Forms.PaintEventArgs e) {
+            System.Diagnostics.Debug.WriteLine("Paint");
+            CreateSeparator();
+            if (TransferInBox.Visible) {
+                CreateLineBelow(TransfersInLabel);
+            }
+            else {
+                ;
+            }
+            if (TransferOutBox.Visible) {
+                CreateLineBelow(TransfersOutLabel);
+            }
+            else {
+                ;
+            }
         }
     }
 }

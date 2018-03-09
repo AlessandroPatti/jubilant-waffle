@@ -26,10 +26,12 @@
             this.components = new System.ComponentModel.Container();
             this.DefaultFolderIcon = new System.Windows.Forms.PictureBox();
             this.AutoSaveIcon = new System.Windows.Forms.PictureBox();
-            this.IncomingLabel = new System.Windows.Forms.Label();
-            this.TransfersLabel = new System.Windows.Forms.Label();
+            this.TransfersInLabel = new System.Windows.Forms.Label();
+            this.TransfersOutLabel = new System.Windows.Forms.Label();
             this.SettingsIcon = new System.Windows.Forms.PictureBox();
             this.IconToolTip = new System.Windows.Forms.ToolTip(this.components);
+            this.TransferInBox = new System.Windows.Forms.ListBox();
+            this.TransferOutBox = new System.Windows.Forms.ListBox();
             ((System.ComponentModel.ISupportInitialize)(this.DefaultFolderIcon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.AutoSaveIcon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SettingsIcon)).BeginInit();
@@ -61,26 +63,30 @@
             this.AutoSaveIcon.TabStop = false;
             this.IconToolTip.SetToolTip(this.AutoSaveIcon, "Automatically accept all incoming requests");
             // 
-            // IncomingLabel
+            // TransfersInLabel
             // 
-            this.IncomingLabel.AutoSize = true;
-            this.IncomingLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.IncomingLabel.Location = new System.Drawing.Point(7, 7);
-            this.IncomingLabel.Name = "IncomingLabel";
-            this.IncomingLabel.Size = new System.Drawing.Size(99, 24);
-            this.IncomingLabel.TabIndex = 3;
-            this.IncomingLabel.Text = "Transfer In";
-            this.IncomingLabel.Click += new System.EventHandler(this.ShowProfile);
+            this.TransfersInLabel.AutoSize = true;
+            this.TransfersInLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.TransfersInLabel.Location = new System.Drawing.Point(2, 2);
+            this.TransfersInLabel.Name = "TransfersInLabel";
+            this.TransfersInLabel.Padding = new System.Windows.Forms.Padding(5);
+            this.TransfersInLabel.Size = new System.Drawing.Size(109, 34);
+            this.TransfersInLabel.TabIndex = 3;
+            this.TransfersInLabel.Text = "Transfer In";
+            this.TransfersInLabel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ShowTransferIn);
             // 
-            // TransfersLabel
+            // TransfersOutLabel
             // 
-            this.TransfersLabel.AutoSize = true;
-            this.TransfersLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.TransfersLabel.Location = new System.Drawing.Point(112, 7);
-            this.TransfersLabel.Name = "TransfersLabel";
-            this.TransfersLabel.Size = new System.Drawing.Size(110, 24);
-            this.TransfersLabel.TabIndex = 4;
-            this.TransfersLabel.Text = "Transfer out";
+            this.TransfersOutLabel.AutoSize = true;
+            this.TransfersOutLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.TransfersOutLabel.Location = new System.Drawing.Point(107, 2);
+            this.TransfersOutLabel.Margin = new System.Windows.Forms.Padding(0);
+            this.TransfersOutLabel.Name = "TransfersOutLabel";
+            this.TransfersOutLabel.Padding = new System.Windows.Forms.Padding(5);
+            this.TransfersOutLabel.Size = new System.Drawing.Size(120, 34);
+            this.TransfersOutLabel.TabIndex = 4;
+            this.TransfersOutLabel.Text = "Transfer out";
+            this.TransfersOutLabel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ShowTransferOut);
             // 
             // SettingsIcon
             // 
@@ -96,6 +102,28 @@
             this.SettingsIcon.TabStop = false;
             this.IconToolTip.SetToolTip(this.SettingsIcon, "Access application settings");
             // 
+            // TransferInBox
+            // 
+            this.TransferInBox.BackColor = System.Drawing.SystemColors.Window;
+            this.TransferInBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.TransferInBox.FormattingEnabled = true;
+            this.TransferInBox.Location = new System.Drawing.Point(11, 45);
+            this.TransferInBox.Name = "TransferInBox";
+            this.TransferInBox.Size = new System.Drawing.Size(361, 299);
+            this.TransferInBox.TabIndex = 6;
+            this.TransferInBox.Visible = false;
+            // 
+            // TransferOutBox
+            // 
+            this.TransferOutBox.BackColor = System.Drawing.SystemColors.Window;
+            this.TransferOutBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.TransferOutBox.FormattingEnabled = true;
+            this.TransferOutBox.Location = new System.Drawing.Point(11, 46);
+            this.TransferOutBox.Name = "TransferOutBox";
+            this.TransferOutBox.Size = new System.Drawing.Size(361, 299);
+            this.TransferOutBox.TabIndex = 7;
+            this.TransferOutBox.Visible = false;
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -103,16 +131,22 @@
             this.BackColor = System.Drawing.SystemColors.Window;
             this.ClientSize = new System.Drawing.Size(384, 361);
             this.ControlBox = false;
+            this.Controls.Add(this.TransferOutBox);
+            this.Controls.Add(this.TransferInBox);
             this.Controls.Add(this.SettingsIcon);
-            this.Controls.Add(this.TransfersLabel);
-            this.Controls.Add(this.IncomingLabel);
+            this.Controls.Add(this.TransfersOutLabel);
+            this.Controls.Add(this.TransfersInLabel);
             this.Controls.Add(this.AutoSaveIcon);
             this.Controls.Add(this.DefaultFolderIcon);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "Main";
             this.Opacity = 0.95D;
             this.ShowIcon = false;
             this.Text = "Main";
-            this.Paint += new System.Windows.Forms.PaintEventHandler(this.Main_Paint);
+            this.Deactivate += new System.EventHandler(this.HideOnClickOut);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.PreventClose);
+            this.Paint += new System.Windows.Forms.PaintEventHandler(this.OnPaint);
+            this.Leave += new System.EventHandler(this.HideOnClickOut);
             ((System.ComponentModel.ISupportInitialize)(this.DefaultFolderIcon)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.AutoSaveIcon)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.SettingsIcon)).EndInit();
@@ -125,9 +159,11 @@
 
         private System.Windows.Forms.PictureBox DefaultFolderIcon;
         private System.Windows.Forms.PictureBox AutoSaveIcon;
-        private System.Windows.Forms.Label IncomingLabel;
-        private System.Windows.Forms.Label TransfersLabel;
+        private System.Windows.Forms.Label TransfersInLabel;
+        private System.Windows.Forms.Label TransfersOutLabel;
         private System.Windows.Forms.PictureBox SettingsIcon;
         private System.Windows.Forms.ToolTip IconToolTip;
+        private System.Windows.Forms.ListBox TransferInBox;
+        private System.Windows.Forms.ListBox TransferOutBox;
     }
 }

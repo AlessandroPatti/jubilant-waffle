@@ -113,7 +113,7 @@ namespace Jubilant_Waffle {
             }
         }
         private void ReadMS() {
-            string msg, path;
+            string msg = "", path = "";
             byte[] data, len = new byte[5];
             int lenght, count;
             System.Net.Sockets.TcpClient client;
@@ -165,6 +165,8 @@ namespace Jubilant_Waffle {
                     }
                     System.Threading.Monitor.PulseAll(files);
                 }
+                if (count > 0)
+                    Program.mainbox.AddProgressBarOut(path + msg);
                 #endregion
             }
         }
@@ -201,6 +203,7 @@ namespace Jubilant_Waffle {
             int nameLenght;
             long fileSize; // The size of the file to be sent
             long dataSent = 0; // The amount of data already sent
+            ProgressBar pbar;
             #endregion
             #region Open connection
             data = System.Text.Encoding.ASCII.GetBytes("FILE!");
@@ -253,6 +256,12 @@ namespace Jubilant_Waffle {
                 return;
             }
             #endregion
+            #region Set Progress Bar
+            pbar = Program.mainbox.ProgressBarsOut[path + IPEndPoint.Address.ToString()];
+            pbar.Maximum = (int)(fileSize / (1024 * 1024));
+            pbar.Minimum = 0;
+            pbar.Step = pbar.Maximum / 4;
+            #endregion;
             #region Send file
             /* Open the file */
             try {
@@ -277,12 +286,23 @@ namespace Jubilant_Waffle {
                     return;
                 }
                 dataChannel.GetStream().Write(data, 0, sizeOfLastRead);
+                pbar.PerformStep();
             }
             /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
             _cancelCurrent = false;
             #endregion
         }
 
+        private string GetMyIp() {
+            var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+            foreach (var ip in host.AddressList) {
+                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
+                    return ip.ToString();
+                }
+            }
+            throw new Exception("No network adapters with an IPv4 address in the system!");
+
+        }
         private void ListenForConnections() {
             /// Listen for user in/out in the LAN
             /// 
@@ -294,6 +314,8 @@ namespace Jubilant_Waffle {
                 switch (msg) {
                     /* New user connection */
                     case "HELLO":
+                        if (endpoint.Address.ToString() == GetMyIp())
+                            continue;
                         if (!users.ContainsKey(endpoint.Address.ToString())) {
                             /* 
                              * Add only if user is not already present.

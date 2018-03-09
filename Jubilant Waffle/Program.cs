@@ -11,12 +11,12 @@ namespace Jubilant_Waffle {
         /// </summary>
 
 
-        static private Server server;
-        static private Client client;
+        static public Server server;
+        static public Client client;
+        static public Main mainbox;
         const string iconFile = "waffle_icon_3x_multiple.ico";
         static System.Windows.Forms.NotifyIcon trayIcon;
 
-        static Main mainbox;
         private static System.Threading.Mutex mutex = null;
         [STAThread]
         static void Main(string[] argv) {
@@ -47,7 +47,7 @@ namespace Jubilant_Waffle {
             client = new Client();
             #endregion
             #region main box
-            mainbox = new Main(server, client);
+            mainbox = new Main();
             #endregion
             #region Tray Icon
             trayIcon = new NotifyIcon();
@@ -59,9 +59,7 @@ namespace Jubilant_Waffle {
 
             /* Set icon */
             trayIcon.Icon = new System.Drawing.Icon(iconFile);
-            /* Execute Minimized and Hide Application (Only Tray) */
-            //this.WindowState = FormWindowState.Minimized;
-            //this.ShowInTaskbar = false;
+
             /* Show notification */
             trayIcon.ShowBalloonTip(500, "Jubilant Waffle", "Jubilant Waffle always runs minimized into tray", ToolTipIcon.None);
             trayIcon.BalloonTipClicked += (object s, EventArgs e) => mainbox.Show();
@@ -104,8 +102,10 @@ namespace Jubilant_Waffle {
         }
 
         private static void ShowMainBox(object sender, MouseEventArgs e) {
-            if(e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left) {
                 mainbox.Show();
+                mainbox.Focus();
+            }
         }
 
         static private void ChangeStatus(object sender, EventArgs e) {
@@ -126,8 +126,8 @@ namespace Jubilant_Waffle {
             RemoveRegistryEntry(@"Software\Classes\Directory\shell\jubilant-waffle\Icon");
             RemoveRegistryEntry(@"Software\Classes\Directory\shell\jubilant-waffle");
             #endregion
-
-            Application.Exit();
+            trayIcon.Visible = false;
+            Environment.Exit(0);
         }
 
         static private bool AddRegistryEntry(string key, string value) {
