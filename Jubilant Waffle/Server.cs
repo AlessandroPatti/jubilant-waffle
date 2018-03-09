@@ -1,7 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
 namespace Jubilant_Waffle {
-    public class Server {
-        
+    public partial class Server : Form {
+
         #region UDPClient
         /* The UDP client is only in charge of sending periodically an announcement if the the status is online */
         System.Net.Sockets.UdpClient udp; //The client
@@ -36,6 +45,7 @@ namespace Jubilant_Waffle {
         }
         const int port = 20000;
         public Server() {
+            InitializeComponent();
             #region UDP Client/Server and Timer setup
             udp = new System.Net.Sockets.UdpClient();
             udp.Connect(System.Net.IPAddress.Broadcast, port); //Set the default IP address. It is the broadcast address and the port passed to the constructor
@@ -240,7 +250,7 @@ namespace Jubilant_Waffle {
             #endregion
             #region Unzip
             //TODO unzip file
-#endregion
+            #endregion
         }
     }
 }
