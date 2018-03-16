@@ -15,7 +15,6 @@ namespace Jubilant_Waffle {
     }
     public partial class Client : Form {
         /* Map of the users known. It indexed by IP address since each connection brings the IP */
-        System.Collections.Generic.Dictionary<String, User> users;
         System.Collections.Generic.LinkedList<FileToSend> files;
         System.Net.Sockets.UdpClient udp;
         /* Pipe used to communicate with other istances (i.e. right click send) */
@@ -23,10 +22,10 @@ namespace Jubilant_Waffle {
         string defaultImagePath; //Use this image if none is selected
         System.Net.Sockets.TcpListener instancesListener;
         const int port = 20000;
+        const int timeout = 2000;
         public Client() {
             System.Diagnostics.Debug.WriteLine("Client");
             udp = new System.Net.Sockets.UdpClient(port);
-            users = new System.Collections.Generic.Dictionary<string, User>();
             files = new System.Collections.Generic.LinkedList<FileToSend>();
             #region Initialize Form
             InitializeComponent();
@@ -38,9 +37,9 @@ namespace Jubilant_Waffle {
             instancesListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port + 1);
             #endregion
             #region Test Users
-            users.Add("192.168.1.1", new User("Mario", "192.168.1.1"));
-            users.Add("192.168.1.2", new User("Luigi", "192.168.1.2"));
-            users.Add("192.168.1.3", new User("Antonio", "192.168.1.3"));
+            Program.users.Add("192.168.1.1", new User("Mario", "192.168.1.1"));
+            Program.users.Add("192.168.1.2", new User("Luigi", "192.168.1.2"));
+            Program.users.Add("192.168.1.3", new User("Antonio", "192.168.1.3"));
             #endregion
             #region Calling show to fire load
             Size tmp = this.Size;
@@ -62,6 +61,7 @@ namespace Jubilant_Waffle {
             #endregion
         }
 
+
         private void PreventClose(object sender, FormClosingEventArgs e) {
             e.Cancel = true;
         }
@@ -77,14 +77,14 @@ namespace Jubilant_Waffle {
                 Image img;
                 imgl.ImageSize = new Size(200, 200);
                 UserListView.Clear();
-                lock (users) {
-                    foreach (User u in users.Values) {
+                lock (Program.users) {
+                    foreach (User u in Program.users.Values) {
                         img = Image.FromFile(u.imagePath != null ? u.imagePath : defaultImagePath);
                         imgl.Images.Add(u.ip, img);
                     }
                     UserListView.LargeImageList = imgl;
                     var i = 0;
-                    foreach (User u in users.Values) {
+                    foreach (User u in Program.users.Values) {
                         UserListView.Items.Add(u.ip, u.name, i++);
                         UserListView.Items[i - 1].ImageKey = u.ip;
                     }
@@ -184,7 +184,7 @@ namespace Jubilant_Waffle {
                     fts = files.First.Value;
                     files.RemoveFirst();
                 }
-                SendFile(fts.path, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), 20000));
+                SendFile(fts.path, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), port));
             }
         }
         private void SendFile(string path, System.Net.IPEndPoint IPEndPoint) {
@@ -197,7 +197,7 @@ namespace Jubilant_Waffle {
             ///  
             #region variables
             System.Net.Sockets.TcpClient dataChannel = new System.Net.Sockets.TcpClient(); // The tcp client used to send data 
-            dataChannel.ReceiveTimeout = dataChannel.SendTimeout = 2000;
+            dataChannel.ReceiveTimeout = dataChannel.SendTimeout = timeout;
             System.IO.FileStream fs; //The file stream to be send 
             byte[] data; // buffer for sockets
             int nameLenght;
@@ -240,6 +240,9 @@ namespace Jubilant_Waffle {
                 System.Console.Write("Impossible send file, failed sending file name");
                 return;
             }
+            #endregion
+            #region Read response
+            //TODO
             #endregion
             #region Zip
             //TODO zip the file
@@ -306,7 +309,7 @@ namespace Jubilant_Waffle {
                     case "HELLO":
                         if (endpoint.Address.ToString() == Program.self.ip)
                             continue;
-                        if (!users.ContainsKey(endpoint.Address.ToString())) {
+                        if (!Program.users.ContainsKey(endpoint.Address.ToString())) {
                             /* 
                              * Add only if user is not already present.
                              * Excuted on the same thread will manage only a connection at a time
@@ -317,8 +320,8 @@ namespace Jubilant_Waffle {
                         break;
                     /* An user is leaving */
                     case "BYE!!":
-                        if (users.ContainsKey(endpoint.Address.ToString())) {
-                            users.Remove(endpoint.Address.ToString());
+                        if (Program.users.ContainsKey(endpoint.Address.ToString())) {
+                            Program.users.Remove(endpoint.Address.ToString());
                         }
                         break;
 
@@ -328,9 +331,9 @@ namespace Jubilant_Waffle {
         private void AddNewUser(System.Net.IPAddress userAddress) {
             #region Connect to user to ask info
             System.Net.Sockets.TcpClient tcp = new System.Net.Sockets.TcpClient();
-            tcp.SendTimeout = tcp.ReceiveTimeout = 2000;
+            tcp.SendTimeout = tcp.ReceiveTimeout = timeout;
             try {
-                tcp.Connect(new System.Net.IPEndPoint(userAddress, 20000));
+                tcp.Connect(new System.Net.IPEndPoint(userAddress, port));
             }
             catch (System.Net.Sockets.SocketException) {
                 /* Could not connect to the host, something went wrong. Nothing will happen */
@@ -445,12 +448,12 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Add the user to the list of known
-            lock (users) {
+            lock (Program.users) {
                 if (msg == "MARIO") {
-                    users.Add(userAddress.ToString(), new User(name, userAddress.ToString(), "user_pic/" + userAddress.ToString() + ".png"));
+                    Program.users.Add(userAddress.ToString(), new User(name, userAddress.ToString(), "user_pic/" + userAddress.ToString() + ".png"));
                 }
                 else {
-                    users.Add(userAddress.ToString(), new User(name, userAddress.ToString()));
+                    Program.users.Add(userAddress.ToString(), new User(name, userAddress.ToString()));
                 }
             }
             #endregion

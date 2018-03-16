@@ -14,6 +14,8 @@ namespace Jubilant_Waffle {
         static public Server server;
         static public Client client;
         static public Main mainbox;
+        static public System.Collections.Generic.Dictionary<String, User> users;
+
         const string iconFile = "waffle_icon_3x_multiple.ico";
         static System.Windows.Forms.NotifyIcon trayIcon;
 
@@ -41,6 +43,7 @@ namespace Jubilant_Waffle {
             #endregion
             #region Setup application
             //TODO Name should be taken from a config file
+            users = new System.Collections.Generic.Dictionary<string, User>();
             self = new User("Alessandro", GetMyIP(), null);
             server = new Server();
             client = new Client();

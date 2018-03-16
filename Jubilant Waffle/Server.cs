@@ -25,6 +25,10 @@ namespace Jubilant_Waffle {
         public bool _autoSave;
         bool _cancelCurrent = false; // This is used to undo the current transfer
         bool _status = false; //The status true means online.
+
+        const int port = 20000;
+        const int timeout = 2000;
+        const int timer = 2000;
         public bool Status {
             get {
                 return _status;
@@ -43,7 +47,6 @@ namespace Jubilant_Waffle {
                 _status = value;
             }
         }
-        const int port = 20000;
         public Server() {
             InitializeComponent();
             #region UDP Client/Server and Timer setup
@@ -55,12 +58,12 @@ namespace Jubilant_Waffle {
              */
             announceTimer = new System.Timers.Timer();
             announceTimer.Elapsed += Announce; // The callback that will execute the announcement has to be added to the event Elapsed
-            announceTimer.Interval = 2000; // The timeout interval
+            announceTimer.Interval = timer; // The timeout interval
             announceTimer.AutoReset = true; // Make the execution repeat several times
             #endregion 
             #region TCP Server setup
             tcp = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Any, port);
-            tcp.Server.ReceiveTimeout = tcp.Server.SendTimeout = 2000; // The timeout set the maxiumum amount of time that the Listener will wait befor throwing and exception
+            tcp.Server.ReceiveTimeout = tcp.Server.SendTimeout = timeout; // The timeout set the maxiumum amount of time that the Listener will wait befor throwing and exception
             #endregion
         }
 
@@ -184,16 +187,10 @@ namespace Jubilant_Waffle {
         private void ReceiveFile(System.Net.Sockets.TcpClient client) {
             byte[] data;
             int fileNameLenght;
-            string filename;
+            string filename, path;
             long fileSize;
             long alreadyReceived = 0;
             System.IO.FileStream fs;
-            if (!_autoSave) {
-                //TODO Prompt accept connection
-            }
-            if (!_useDefault) {
-                //TODO Prompt request path
-            }
             #region Read file name lenght
             data = new byte[4];
             try {
@@ -218,6 +215,32 @@ namespace Jubilant_Waffle {
             }
             filename = System.Text.Encoding.ASCII.GetString(data);
             #endregion
+            #region Response
+            if (!_autoSave) {
+                //TODO Prompt accept connection
+                string name;
+                lock (Program.users) {
+                    name = Program.users[((System.Net.IPEndPoint)client.Client.RemoteEndPoint).Address.ToString()].name;
+                }
+                DialogResult res = MessageBox.Show("User '" + name + "' is willing to send you the file '" + filename + "'. Do you want to accept?", "", MessageBoxButtons.YesNo);
+                if (res == DialogResult.No) {
+                    // User refused the file
+                    return;
+                }
+            }
+            if (!_useDefault) {
+                DialogResult res = FolderSelectionDialog.ShowDialog();
+                if (res == DialogResult.OK) {
+                    path = FolderSelectionDialog.SelectedPath + @"\" + filename;
+                }
+                else {
+                    return;
+                }
+            }
+            else {
+                path = defaultPath + @"\" + filename;
+            }
+            #endregion
             #region Read file size
             data = new byte[8];
             try {
@@ -233,7 +256,7 @@ namespace Jubilant_Waffle {
             #region Receive file
             data = new byte[4 * 1024 * 1024];
             //TODO existing file will be automatically overwritten. Modify this behaviour later
-            fs = new System.IO.FileStream(filename, System.IO.FileMode.Create);
+            fs = new System.IO.FileStream(path, System.IO.FileMode.Create);
             while (alreadyReceived < fileSize && !_cancelCurrent) {
                 try {
                     client.GetStream().Read(data, 0, (int)System.Math.Min((long)4 * 1024 * 1024, fileSize - alreadyReceived));
