@@ -27,8 +27,10 @@ namespace Jubilant_Waffle {
         bool _status = false; //The status true means online.
 
         const int port = 20000;
-        const int timeout = 2000;
+        const int timeout = 200000;
         const int timer = 2000;
+
+        
         public bool Status {
             get {
                 return _status;
@@ -37,6 +39,9 @@ namespace Jubilant_Waffle {
                 /* If the user set true and server is not running, start both services */
                 if (value && !_status) {
                     tcp.Start();
+                    System.Threading.Thread t = new System.Threading.Thread(() => ServerRoutine());
+                    t.Name = "Server Routine";
+                    t.Start();
                     announceTimer.Enabled = true;
                 }
                 /* If the user set false and server is running, stop both services */

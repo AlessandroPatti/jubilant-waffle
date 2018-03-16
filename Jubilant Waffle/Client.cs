@@ -22,7 +22,7 @@ namespace Jubilant_Waffle {
         string defaultImagePath; //Use this image if none is selected
         System.Net.Sockets.TcpListener instancesListener;
         const int port = 20000;
-        const int timeout = 2000;
+        const int timeout = 200000;
         public Client() {
             System.Diagnostics.Debug.WriteLine("Client");
             udp = new System.Net.Sockets.UdpClient(port);
