@@ -410,6 +410,7 @@ namespace Jubilant_Waffle {
                  */
                 long imageLenght;
                 byte[] image;
+                lenght = new byte[8];
                 try {
                     tcp.GetStream().Read(lenght, 0, 8);
                 }
@@ -424,7 +425,8 @@ namespace Jubilant_Waffle {
                 /*
                  * Read the actual image file
                  */
-
+                if (!System.IO.Directory.Exists("user_pic"))
+                    System.IO.Directory.CreateDirectory("user_pic");
                 byte[] data = new byte[4 * 1024 * 1024];
                 //TODO existing file will be automatically overwritten. Modify this behaviour later
                 System.IO.FileStream fs = new System.IO.FileStream("user_pic/" + userAddress.ToString() + ".png", System.IO.FileMode.Create);
