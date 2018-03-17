@@ -96,7 +96,7 @@ namespace Jubilant_Waffle {
                 }
                 #endregion
                 #region new incoming connection
-                new System.Threading.Thread(() => ManageConnection(incomingConnection));
+                (new System.Threading.Thread(() => ManageConnection(incomingConnection))).Start();
                 #endregion
             }
         }
@@ -195,6 +195,7 @@ namespace Jubilant_Waffle {
             string filename, path;
             long fileSize;
             long alreadyReceived = 0;
+            int sizeOfLastRead;
             System.IO.FileStream fs;
             #region Read file name lenght
             data = new byte[4];
@@ -270,17 +271,20 @@ namespace Jubilant_Waffle {
             fs = new System.IO.FileStream(path, System.IO.FileMode.Create);
             while (alreadyReceived < fileSize && !_cancelCurrent) {
                 try {
-                    client.GetStream().Read(data, 0, (int)System.Math.Min((long)4 * 1024 * 1024, fileSize - alreadyReceived));
+                    sizeOfLastRead = client.GetStream().Read(data, 0, (int)System.Math.Min((long)4 * 1024 * 1024, fileSize - alreadyReceived));
                 }
                 catch (System.Net.Sockets.SocketException) {
                     /* Could not connect to the host, something went wrong. Request aborted */
                     System.Console.Write("Impossible receiving file, failed reading file size");
                     return;
                 }
-
+                alreadyReceived += sizeOfLastRead;
+                System.Diagnostics.Debug.WriteLine("Sent " + alreadyReceived.ToString() + "B out of " + fileSize.ToString() + "B");
+                fs.Write(data, 0, sizeOfLastRead);
             }
             /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
             _cancelCurrent = false;
+            fs.Close();
             #endregion
             #region Unzip
             //TODO unzip file

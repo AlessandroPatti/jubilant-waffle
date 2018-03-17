@@ -58,27 +58,43 @@ namespace Jubilant_Waffle {
             #endregion
         }
 
+        delegate void AddProgressBarCallback(string name);
         public void AddProgressBarIn(string name) {
-            ProgressBar pbar = new ProgressBar();
-            pbar.Name = name;
-            int i = 0;
-            while (ProgressBarsIn.ContainsKey(name + i.ToString())) {
-                i++;
+            if (this.InvokeRequired) {
+                AddProgressBarCallback callback = new AddProgressBarCallback(AddProgressBarIn);
+                this.Invoke(callback, name);
             }
-            ProgressBarsIn.Add(name + i.ToString(), pbar);
+            else {
+                ProgressBar pbar = new ProgressBar();
+                pbar.Name = name;
+                int i = 0;
+                while (ProgressBarsIn.ContainsKey(name + i.ToString())) {
+                    i++;
+                }
+                ProgressBarsIn.Add(name + i.ToString(), pbar);
+            }
         }
         public void AddProgressBarOut(string name) {
-            ProgressBar pbar = new ProgressBar();
-            pbar.Name = name;
-            /* What if two file with the same name are sent to the same user?
-             * 
-             int i = 0;
-            while (ProgressBarsOut.ContainsKey(name + i.ToString())) {
-                i++;
+            if (this.InvokeRequired) {
+                AddProgressBarCallback callback = new AddProgressBarCallback(AddProgressBarOut);
+                this.Invoke(callback, name);
             }
-            ProgressBarsOut.Add(name + i.ToString(), pbar);
-            */
-            ProgressBarsOut.Add(name, pbar);
+            else {
+                ProgressBar pbar = new ProgressBar();
+                pbar.Name = name;
+                /* What if two file with the same name are sent to the same user?
+                 * 
+                 int i = 0;
+                while (ProgressBarsOut.ContainsKey(name + i.ToString())) {
+                    i++;
+                }
+                ProgressBarsOut.Add(name + i.ToString(), pbar);
+                */
+                ProgressBarsOut.Add(name, pbar);
+//                TransferOutBox.BeginUpdate();
+                TransferOutBox.Items.Add(pbar);
+                TransferOutBox.Update();
+            }
         }
 
         private void ToggleDefaultFolder(object sender, MouseEventArgs e) {
@@ -143,7 +159,6 @@ namespace Jubilant_Waffle {
             myPen.Dispose();
         }
         private void OnPaint(object sender, System.Windows.Forms.PaintEventArgs e) {
-            System.Diagnostics.Debug.WriteLine("Paint");
             CreateSeparator();
             if (TransferInBox.Visible) {
                 CreateLineBelow(TransfersInLabel);

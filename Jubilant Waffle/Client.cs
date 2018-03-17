@@ -24,7 +24,6 @@ namespace Jubilant_Waffle {
         const int port = 20000;
         const int timeout = 200000;
         public Client() {
-            System.Diagnostics.Debug.WriteLine("Client");
             udp = new System.Net.Sockets.UdpClient(port);
             files = new System.Collections.Generic.LinkedList<FileToSend>();
             #region Initialize Form
@@ -148,27 +147,25 @@ namespace Jubilant_Waffle {
                     data = new byte[lenght];
                     npss.Read(data, 0, data.Length);
                     msg = System.Text.Encoding.ASCII.GetString(data);
-                    System.Diagnostics.Debug.WriteLine(path);
                     tmp.Add(new FileToSend { path = path, ip = msg });
                 }
                 npss.Close();
                 #endregion
                 #region Enqueue files
 
-                if (count > 0)
+                if (count > 0) {
                     Program.mainbox.AddProgressBarOut(path + msg);
-                lock (files) {
-                    foreach (FileToSend file in tmp) {
-                        files.AddLast(file);
+                    lock (files) {
+                        foreach (FileToSend file in tmp) {
+                            files.AddLast(file);
+                        }
+                        System.Threading.Monitor.PulseAll(files);
                     }
-                    System.Threading.Monitor.PulseAll(files);
                 }
                 #endregion
             }
         }
         private void ConsumeFileList() {
-
-            System.Diagnostics.Debug.WriteLine("Consume File List");
             FileToSend fts;
             while (true) {
                 lock (files) {
@@ -285,6 +282,8 @@ namespace Jubilant_Waffle {
                     return;
                 }
                 dataChannel.GetStream().Write(data, 0, sizeOfLastRead);
+                dataSent += sizeOfLastRead;
+                System.Diagnostics.Debug.WriteLine("Sent " + dataSent.ToString() + "B out of " + fileSize.ToString() + "B");
                 pbar.PerformStep();
             }
             /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
@@ -295,7 +294,6 @@ namespace Jubilant_Waffle {
         private void ListenForConnections() {
             /// Listen for user in/out in the LAN
             /// 
-            System.Diagnostics.Debug.WriteLine("Listen for connections...");
             while (true) {
                 System.Net.IPEndPoint endpoint = new System.Net.IPEndPoint(0, 0); // The endpoint will identify the user that sent the message
                 byte[] data = udp.Receive(ref endpoint); //Wait for a new message. It is blocking

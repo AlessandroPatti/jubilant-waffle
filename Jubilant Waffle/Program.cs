@@ -44,7 +44,7 @@ namespace Jubilant_Waffle {
             #region Setup application
             //TODO Name should be taken from a config file
             users = new System.Collections.Generic.Dictionary<string, User>();
-            self = new User("Alessandro", GetMyIP(), null);
+            self = new User("Alessandro", GetMyIP());
             server = new Server();
             client = new Client();
             #endregion
