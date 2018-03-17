@@ -70,11 +70,15 @@ namespace Jubilant_Waffle {
         public void AddProgressBarOut(string name) {
             ProgressBar pbar = new ProgressBar();
             pbar.Name = name;
-            int i = 0;
+            /* What if two file with the same name are sent to the same user?
+             * 
+             int i = 0;
             while (ProgressBarsOut.ContainsKey(name + i.ToString())) {
                 i++;
             }
             ProgressBarsOut.Add(name + i.ToString(), pbar);
+            */
+            ProgressBarsOut.Add(name, pbar);
         }
 
         private void ToggleDefaultFolder(object sender, MouseEventArgs e) {

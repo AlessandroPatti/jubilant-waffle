@@ -225,7 +225,13 @@ namespace Jubilant_Waffle {
                 //TODO Prompt accept connection
                 string name;
                 lock (Program.users) {
-                    name = Program.users[((System.Net.IPEndPoint)client.Client.RemoteEndPoint).Address.ToString()].name;
+                    try {
+                        name = Program.users[((System.Net.IPEndPoint)client.Client.RemoteEndPoint).Address.ToString()].name;
+                    }
+                    catch (KeyNotFoundException e) {
+                        //TODO maybe ask for name?
+                        name = "unknown";
+                    }
                 }
                 DialogResult res = MessageBox.Show("User '" + name + "' is willing to send you the file '" + filename + "'. Do you want to accept?", "", MessageBoxButtons.YesNo);
                 if (res == DialogResult.No) {

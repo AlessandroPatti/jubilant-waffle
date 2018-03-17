@@ -36,11 +36,6 @@ namespace Jubilant_Waffle {
             #region Initiliaze socket to list for local connections
             instancesListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port + 1);
             #endregion
-            #region Test Users
-            Program.users.Add("192.168.1.1", new User("Mario", "192.168.1.1"));
-            Program.users.Add("192.168.1.2", new User("Luigi", "192.168.1.2"));
-            Program.users.Add("192.168.1.3", new User("Antonio", "192.168.1.3"));
-            #endregion
             #region Calling show to fire load
             Size tmp = this.Size;
             this.Size = new Size(0, 0);
@@ -114,7 +109,7 @@ namespace Jubilant_Waffle {
         }
         private void ReadMS() {
             string msg = "", path = "";
-            byte[] data, len = new byte[5];
+            byte[] data, len = new byte[4];
             int lenght, count;
             System.Net.Sockets.TcpClient client;
             instancesListener.Start();
@@ -124,7 +119,6 @@ namespace Jubilant_Waffle {
                 client = instancesListener.AcceptTcpClient();
                 client.GetStream().Read(len, 0, len.Length);
                 lenght = System.BitConverter.ToInt32(len, 0);
-
                 data = new byte[lenght];
                 client.GetStream().Read(data, 0, data.Length);
                 path = System.Text.Encoding.ASCII.GetString(data);
@@ -143,30 +137,32 @@ namespace Jubilant_Waffle {
                  *      - ...
                  */
 
-                npss.Read(len, 0, 4);
+                npss.Read(len, 0, len.Length);
                 count = System.BitConverter.ToInt32(len, 0);
                 #endregion
                 #region Read Users
                 List<FileToSend> tmp = new List<FileToSend>();
                 for (var i = 0; i < count; i++) {
-                    npss.Read(len, 0, 4);
+                    npss.Read(len, 0, len.Length);
                     lenght = System.BitConverter.ToInt32(len, 0);
                     data = new byte[lenght];
                     npss.Read(data, 0, data.Length);
                     msg = System.Text.Encoding.ASCII.GetString(data);
+                    System.Diagnostics.Debug.WriteLine(path);
                     tmp.Add(new FileToSend { path = path, ip = msg });
                 }
                 npss.Close();
                 #endregion
                 #region Enqueue files
+
+                if (count > 0)
+                    Program.mainbox.AddProgressBarOut(path + msg);
                 lock (files) {
                     foreach (FileToSend file in tmp) {
-                        files.AddFirst(file);
+                        files.AddLast(file);
                     }
                     System.Threading.Monitor.PulseAll(files);
                 }
-                if (count > 0)
-                    Program.mainbox.AddProgressBarOut(path + msg);
                 #endregion
             }
         }
@@ -335,7 +331,7 @@ namespace Jubilant_Waffle {
             try {
                 tcp.Connect(new System.Net.IPEndPoint(userAddress, port));
             }
-            catch (System.Net.Sockets.SocketException) {
+            catch {
                 /* Could not connect to the host, something went wrong. Nothing will happen */
                 System.Console.Write("Impossible add new user, connection unsuccessful");
                 return;
