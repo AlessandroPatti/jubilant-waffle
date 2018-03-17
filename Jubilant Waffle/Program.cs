@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -166,7 +168,7 @@ namespace Jubilant_Waffle {
 
 
 
-        static private string GetMyIP() {
+        static public string GetMyIP() {
             var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
             foreach (var ip in host.AddressList) {
                 if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
@@ -176,5 +178,33 @@ namespace Jubilant_Waffle {
             throw new Exception("No network adapters with an IPv4 address in the system!");
 
         }
+
+        public static System.Net.IPAddress GetSubnetMask(System.Net.IPAddress address) {
+            foreach (NetworkInterface adapter in NetworkInterface.GetAllNetworkInterfaces()) {
+                foreach (UnicastIPAddressInformation unicastIPAddressInformation in adapter.GetIPProperties().UnicastAddresses) {
+                    if (unicastIPAddressInformation.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
+                        if (address.Equals(unicastIPAddressInformation.Address)) {
+                            return unicastIPAddressInformation.IPv4Mask;
+                        }
+                    }
+                }
+            }
+            throw new ArgumentException(string.Format("Can't find subnetmask for IP address '{0}'", address));
+        }
+
+        public static System.Net.IPAddress GetBroadcastAddress(this System.Net.IPAddress address, IPAddress subnetMask) {
+            byte[] ipAdressBytes = address.GetAddressBytes();
+            byte[] subnetMaskBytes = subnetMask.GetAddressBytes();
+
+            if (ipAdressBytes.Length != subnetMaskBytes.Length)
+                throw new ArgumentException("Lengths of IP address and subnet mask do not match.");
+
+            byte[] broadcastAddress = new byte[ipAdressBytes.Length];
+            for (int i = 0; i < broadcastAddress.Length; i++) {
+                broadcastAddress[i] = (byte)(ipAdressBytes[i] | (subnetMaskBytes[i] ^ 255));
+            }
+            return new System.Net.IPAddress(broadcastAddress);
+        }
+
     }
 }

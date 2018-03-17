@@ -420,24 +420,29 @@ namespace Jubilant_Waffle {
                 }
                 imageLenght = System.BitConverter.ToInt64(lenght, 0); //TODO how to manage big and little endian?
 
-                /* 
-                 * Read the actual image file 
-                 */
-                image = new byte[imageLenght];
-                try {
-                    tcp.GetStream().Read(image, 0, (Int32)imageLenght);  //TODO Warning! Casting to int may cause lost of MSBs! Introduce image size limit?
-                }
-                catch (System.Net.Sockets.SocketException) {
-                    /* Could not connect to the host, something went wrong. Nothing will happen */
-                    System.Console.Write("Impossible add new user, image unsuccessful");
-                    return;
-                }
 
                 /*
-                 * Write the image file to disk
+                 * Read the actual image file
                  */
-                System.IO.FileStream fs = System.IO.File.Create("user_pic/" + userAddress.ToString() + ".png");
-                fs.Write(image, 0, image.Length);
+
+                byte[] data = new byte[4 * 1024 * 1024];
+                //TODO existing file will be automatically overwritten. Modify this behaviour later
+                System.IO.FileStream fs = new System.IO.FileStream("user_pic/" + userAddress.ToString() + ".png", System.IO.FileMode.Create);
+                long alreadyReceived = 0;
+                int sizeOfLastRead = 0;
+                while (alreadyReceived < imageLenght && !_cancelCurrent) {
+                    try {
+                        sizeOfLastRead = tcp.GetStream().Read(data, 0, (int)System.Math.Min((long)4 * 1024 * 1024, imageLenght - alreadyReceived));
+                    }
+                    catch (System.Net.Sockets.SocketException) {
+                        /* Could not connect to the host, something went wrong. Request aborted */
+                        System.Console.Write("Impossible receiving file, failed reading file size");
+                        return;
+                    }
+                    alreadyReceived += sizeOfLastRead;
+                    System.Diagnostics.Debug.WriteLine("Sent " + alreadyReceived.ToString() + "B out of " + imageLenght.ToString() + "B");
+                    fs.Write(data, 0, sizeOfLastRead);
+                }
                 fs.Close();
             }
             #endregion

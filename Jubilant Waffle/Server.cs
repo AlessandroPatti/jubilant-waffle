@@ -56,8 +56,12 @@ namespace Jubilant_Waffle {
             InitializeComponent();
             #region UDP Client/Server and Timer setup
             udp = new System.Net.Sockets.UdpClient();
-            udp.Connect(System.Net.IPAddress.Broadcast, port); //Set the default IP address. It is the broadcast address and the port passed to the constructor
-
+            System.Net.IPAddress ip, mask, broadcast;
+            ip = System.Net.IPAddress.Parse(Program.self.ip);
+            mask = Program.GetSubnetMask(ip);
+            broadcast = Program.GetBroadcastAddress(ip, mask);
+            udp.Connect(broadcast, port); //Set the default IP address. It is the broadcast address of the subnet
+            udp.EnableBroadcast = true;
             /* 
              * Setup the timer for the announcement
              */
@@ -184,7 +188,34 @@ namespace Jubilant_Waffle {
                 }
                 #endregion
                 #region Send Image
-                client.Client.SendFile(Program.self.imagePath);
+                System.IO.FileStream fs;
+                /* Open the file */
+                try {
+                    fs = System.IO.File.OpenRead(Program.self.imagePath);
+                }
+                catch (System.IO.FileNotFoundException) {
+                    /* Could not find the file. File will not be sent */
+                    System.Console.Write("Impossible send file, file not found");
+                    return;
+                }
+                /* Send the file */
+                data = new byte[4 * 1024 * 1024];
+                long dataSent = 0;
+                long fileSize = (new System.IO.FileInfo(Program.self.imagePath)).Length;
+                while (dataSent < fileSize) {
+                    int sizeOfLastRead = 0;
+                    try {
+                        sizeOfLastRead = fs.Read(data, 0, (int)System.Math.Min(fileSize - dataSent, (long)data.Length));
+                    }
+                    catch {
+                        /* Could not read the file. File will not be sent */
+                        System.Console.Write("Impossible send file, error will reading");
+                        return;
+                    }
+                    client.GetStream().Write(data, 0, sizeOfLastRead);
+                    dataSent += sizeOfLastRead;
+                }
+
                 #endregion
             }
         }
