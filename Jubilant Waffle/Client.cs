@@ -122,6 +122,8 @@ namespace Jubilant_Waffle {
                 client.GetStream().Read(data, 0, data.Length);
                 path = System.Text.Encoding.ASCII.GetString(data);
                 client.Close();
+                System.IO.FileInfo fi = new System.IO.FileInfo(path);
+                path = fi.FullName;
                 #endregion
                 #region Ask user
                 npss = new System.IO.Pipes.NamedPipeServerStream("JubilantWaffleInternal");
