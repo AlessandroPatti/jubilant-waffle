@@ -70,6 +70,7 @@ namespace Jubilant_Waffle {
                 ImageList imgl = new ImageList();
                 Image img;
                 imgl.ImageSize = new Size(200, 200);
+                imgl.ColorDepth = ColorDepth.Depth32Bit;
                 UserListView.Clear();
                 lock (Program.users) {
                     foreach (User u in Program.users.Values) {
