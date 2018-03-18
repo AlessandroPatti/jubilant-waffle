@@ -45,7 +45,7 @@
             // 
             // UserPicBox
             // 
-            this.UserPicBox.ImageLocation = "default-user-image.png";
+            this.UserPicBox.ImageLocation = @"icons\default-user-image.png";
             this.UserPicBox.Location = new System.Drawing.Point(25, 25);
             this.UserPicBox.Name = "UserPicBox";
             this.UserPicBox.Size = new System.Drawing.Size(150, 150);
@@ -107,7 +107,7 @@
             // CameraPicBox
             // 
             this.CameraPicBox.BackColor = System.Drawing.Color.Transparent;
-            this.CameraPicBox.ImageLocation = "edit.png";
+            this.CameraPicBox.ImageLocation = @"icons\edit.png";
             this.CameraPicBox.Location = new System.Drawing.Point(25, 145);
             this.CameraPicBox.Name = "CameraPicBox";
             this.CameraPicBox.Size = new System.Drawing.Size(30, 30);

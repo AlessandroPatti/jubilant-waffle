@@ -332,7 +332,7 @@ namespace Jubilant_Waffle {
             }
             if (System.IO.File.Exists(path)) {
                 string noEx = path.Substring(0, path.LastIndexOf("."));
-                int i= 1;
+                int i = 1;
                 string ex = path.Substring(path.LastIndexOf("."));
                 while (System.IO.File.Exists(path)) {
                     path = noEx + "(" + i.ToString() + ")" + ex;

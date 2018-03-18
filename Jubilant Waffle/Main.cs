@@ -104,7 +104,7 @@ namespace Jubilant_Waffle {
         private void ToggleStatus(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 Program.server.Status = !Program.server.Status;
-                StatusIcon.ImageLocation = Program.server.Status ? "status_on.png" : "status_off.png";
+                StatusIcon.ImageLocation = Program.server.Status ? @"icons\status_on.png" : @"icons\status_off.png";
                 string tooltip = Program.server.Status ? "Go offline" : "Go online";
                 this.IconToolTip.SetToolTip(this.StatusIcon, tooltip);
             }
@@ -112,7 +112,7 @@ namespace Jubilant_Waffle {
         private void ToggleDefaultFolder(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 Program.server.UseDefault = !Program.server.UseDefault;
-                DefaultFolderIcon.ImageLocation = Program.server.UseDefault ? "folder_default_on.png" : "folder_default_off.png";
+                DefaultFolderIcon.ImageLocation = Program.server.UseDefault ? @"icons\folder_default_on.png" : @"icons\folder_default_off.png";
                 string tooltip = Program.server.UseDefault ? "Disable default folder" : "Enable default folder";
                 this.IconToolTip.SetToolTip(this.DefaultFolderIcon, tooltip);
             }
@@ -120,7 +120,7 @@ namespace Jubilant_Waffle {
         private void ToggleAutosave(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 Program.server.AutoSave = !Program.server.AutoSave;
-                AutoSaveIcon.ImageLocation = Program.server.AutoSave ? "autosave_on.png" : "autosave_off.png";
+                AutoSaveIcon.ImageLocation = Program.server.AutoSave ? @"icons\autosave_on.png" : @"icons\autosave_off.png";
                 string tooltip = Program.server.AutoSave ? "Ask permission for each transfer" : "Automatically accept incoming requests";
                 this.IconToolTip.SetToolTip(this.AutoSaveIcon, tooltip);
             }
@@ -195,13 +195,13 @@ namespace Jubilant_Waffle {
 
         private void LoadIcons(object sender, EventArgs e) {
             string tooltip;
-            AutoSaveIcon.ImageLocation = Program.server.AutoSave ? "autosave_on.png" : "autosave_off.png";
+            AutoSaveIcon.ImageLocation = Program.server.AutoSave ? @"icons\autosave_on.png" : @"icons\autosave_off.png";
             tooltip = Program.server.AutoSave ? "Ask permission for each transfer" : "Automatically accept incoming requests";
             this.IconToolTip.SetToolTip(this.AutoSaveIcon, tooltip);
-            DefaultFolderIcon.ImageLocation = Program.server.UseDefault ? "folder_default_on.png" : "folder_default_off.png";
+            DefaultFolderIcon.ImageLocation = Program.server.UseDefault ? @"icons\folder_default_on.png" : @"icons\folder_default_off.png";
             tooltip = Program.server.UseDefault ? "Disable default folder" : "Enable default folder";
             this.IconToolTip.SetToolTip(this.DefaultFolderIcon, tooltip);
-            StatusIcon.ImageLocation = Program.server.Status ? "status_on.png" : "status_off.png";
+            StatusIcon.ImageLocation = Program.server.Status ? @"icons\status_on.png" : @"icons\status_off.png";
             tooltip = Program.server.Status ? "Go offline" : "Go online";
             this.IconToolTip.SetToolTip(this.StatusIcon, tooltip);
         }

@@ -113,6 +113,15 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="icons\autosave_off.png" />
+    <Content Include="icons\autosave_on.png" />
+    <Content Include="icons\default-user-image.png" />
+    <Content Include="icons\edit.png" />
+    <Content Include="icons\folder_default_off.png" />
+    <Content Include="icons\folder_default_on.png" />
+    <Content Include="icons\settings.png" />
+    <Content Include="icons\status_off.png" />
+    <Content Include="icons\status_on.png" />
     <Content Include="waffle_icon_3x_multiple.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

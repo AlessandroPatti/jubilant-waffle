@@ -30,7 +30,7 @@ namespace Jubilant_Waffle {
             InitializeComponent();
             this.FormClosing += PreventClose;
             /* Image ListView */
-            defaultImagePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\default-user-image.png";
+            defaultImagePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\icons\default-user-image.png";
             #endregion
             #region Initiliaze socket to list for local connections
             instancesListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port + 1);

@@ -38,19 +38,19 @@ namespace Jubilant_Waffle {
         private void ConfirmW(object sender, EventArgs e) {
             this.Hide();
             WriteConfiguration();
-            if (UserPicBox.ImageLocation != "user.png" && UserPicBox.ImageLocation != "default-user-image.png")
+            if (UserPicBox.ImageLocation != Program.AppDataFolder + @"\user.png" && UserPicBox.ImageLocation != Program.AppDataFolder + @"icons\default-user-image.png")
                 if ((new System.IO.FileInfo(UserPicBox.ImageLocation)).Extension != "png") {
                     Image img = Image.FromFile(UserPicBox.ImageLocation);
                     Bitmap bmp = new Bitmap(img);
-                    if (System.IO.File.Exists("user.png")) {
-                        System.IO.File.Delete("user.png");
+                    if (System.IO.File.Exists(Program.AppDataFolder + @"\user.png")) {
+                        System.IO.File.Delete(Program.AppDataFolder + @"\user.png");
                     }
-                    bmp.Save("user.png", System.Drawing.Imaging.ImageFormat.Png);
+                    bmp.Save(Program.AppDataFolder + @"\user.png", System.Drawing.Imaging.ImageFormat.Png);
                 }
                 else
-                    System.IO.File.Copy(UserPicBox.ImageLocation, "user.png");
-            if (UserPicBox.ImageLocation != "user.png" && UserPicBox.ImageLocation != "default-user-image.png") {
-                Program.self.imagePath = "user.png";
+                    System.IO.File.Copy(UserPicBox.ImageLocation, Program.AppDataFolder + @"\user.png");
+            if (UserPicBox.ImageLocation != Program.AppDataFolder + @"\user.png" && UserPicBox.ImageLocation != @"icons\default-user-image.png") {
+                Program.self.imagePath = Program.AppDataFolder + @"\user.png";
             }
             lock (Program.mutex) {
                 Program.wizardRes = true;

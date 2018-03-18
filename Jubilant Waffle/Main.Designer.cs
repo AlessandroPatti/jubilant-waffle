@@ -43,7 +43,7 @@
             // 
             this.StatusIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.StatusIcon.BackColor = System.Drawing.Color.White;
-            this.StatusIcon.ImageLocation = "status_off.png";
+            this.StatusIcon.ImageLocation = @"icons\status_off.png";
             this.StatusIcon.Location = new System.Drawing.Point(315, 0);
             this.StatusIcon.Name = "StatusIcon";
             this.StatusIcon.Size = new System.Drawing.Size(35, 35);
@@ -56,7 +56,7 @@
             // 
             this.AutoSaveIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.AutoSaveIcon.BackColor = System.Drawing.Color.White;
-            this.AutoSaveIcon.ImageLocation = "autosave_off.png";
+            this.AutoSaveIcon.ImageLocation = @"icons\autosave_off.png";
             this.AutoSaveIcon.Location = new System.Drawing.Point(245, 0);
             this.AutoSaveIcon.Name = "AutoSaveIcon";
             this.AutoSaveIcon.Size = new System.Drawing.Size(35, 35);
@@ -95,7 +95,7 @@
             this.SettingsIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.SettingsIcon.BackColor = System.Drawing.Color.White;
             this.SettingsIcon.ErrorImage = null;
-            this.SettingsIcon.ImageLocation = "settings.png";
+            this.SettingsIcon.ImageLocation = @"icons\settings.png";
             this.SettingsIcon.Location = new System.Drawing.Point(350, 0);
             this.SettingsIcon.Name = "SettingsIcon";
             this.SettingsIcon.Size = new System.Drawing.Size(35, 35);
@@ -131,7 +131,7 @@
             // 
             this.DefaultFolderIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.DefaultFolderIcon.BackColor = System.Drawing.Color.White;
-            this.DefaultFolderIcon.ImageLocation = "folder_default_off.png";
+            this.DefaultFolderIcon.ImageLocation = @"icons\folder_default_off.png";
             this.DefaultFolderIcon.Location = new System.Drawing.Point(280, 0);
             this.DefaultFolderIcon.Name = "DefaultFolderIcon";
             this.DefaultFolderIcon.Size = new System.Drawing.Size(35, 35);

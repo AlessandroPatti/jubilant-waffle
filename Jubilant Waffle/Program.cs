@@ -24,6 +24,8 @@ namespace Jubilant_Waffle {
         public static Wizard w;
         public static Boolean wizardRes = true;
         public static System.Threading.Mutex mutex = null;
+        public static string AppDataFolder;
+
         [STAThread]
         static void Main(string[] argv) {
             #region
@@ -37,7 +39,7 @@ namespace Jubilant_Waffle {
             const string appName = "Jubilant Waffle";
             mutex = new System.Threading.Mutex(true, appName, out createdNew);
             if (!createdNew) {
-                if(argv.Length > 0) {
+                if (argv.Length > 0) {
                     string path = System.String.Join(" ", argv);
                     Client.EnqueueMessage(path);
                 }
@@ -47,22 +49,23 @@ namespace Jubilant_Waffle {
             #region Setup application
             //TODO Name should be taken from a config file
             users = new System.Collections.Generic.Dictionary<string, User>();
-            self = new User("", GetMyIP(), "default-user-image.png");
+            self = new User("", GetMyIP(), @"icons\default-user-image.png");
             server = new Server();
             client = new Client();
-
-            if (!System.IO.File.Exists("settings.ini")) {
+            AppDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Jubilant Waffle";
+            if (!System.IO.File.Exists(AppDataFolder + @"\settings.ini")) {
                 server.DefaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Jubilant Waffle";
                 w = new Wizard();
                 w.Show();
                 Application.Run(w);
-                WriteSettingsFile();
+                if (!wizardRes)
+                    Environment.Exit(0);
+                else
+                    WriteSettingsFile();
             }
             else {
                 ReadSettingsFile();
             }
-            if (!wizardRes)
-                Environment.Exit(0);
             #endregion
             #region main box
             mainbox = new Main();
@@ -94,7 +97,7 @@ namespace Jubilant_Waffle {
             trayContextMenuItems[1].Click += ChangeStatus;
 
             trayIcon.ContextMenu = new ContextMenu(trayContextMenuItems);
-            
+
             /* Show box on left click */
             trayIcon.MouseClick += ShowMainBox;
             #endregion
@@ -118,12 +121,12 @@ namespace Jubilant_Waffle {
             Application.Run();
 
         }
-        
+
         private static void ReadSettingsFile() {
             string param, value;
-            foreach(var line in System.IO.File.ReadLines("settings.ini")) {
+            foreach (var line in System.IO.File.ReadLines(AppDataFolder + @"\settings.ini")) {
                 param = line.Substring(0, line.IndexOf(":"));
-                value = line.Substring(line.IndexOf(":")+1);
+                value = line.Substring(line.IndexOf(":") + 1);
                 switch (param) {
                     case "Autosave":
                         server.AutoSave = value == "True" ? true : false;
@@ -138,7 +141,7 @@ namespace Jubilant_Waffle {
                         server.Status = value == "True" ? true : false;
                         break;
                     case "Pic":
-                        self.imagePath = value == "Custom" ? "user.png" : "default-user-image.png";
+                        self.imagePath = value == "Custom" ? AppDataFolder + @"\user.png" : @"icons\default-user-image.png";
                         break;
                     case "PublicName":
                         self.publicName = value;
@@ -154,12 +157,15 @@ namespace Jubilant_Waffle {
         }
 
         private static void WriteSettingsFile() {
-            System.IO.StreamWriter sw = new System.IO.StreamWriter("settings.ini");
+            System.IO.StreamWriter sw;
+            if (!System.IO.Directory.Exists(AppDataFolder))
+                System.IO.Directory.CreateDirectory(AppDataFolder);
+            sw = new System.IO.StreamWriter(AppDataFolder + @"\settings.ini");
             sw.WriteLine("Autosave:" + (server.AutoSave ? "True" : "False"));
             sw.WriteLine("UseDefault:" + (server.UseDefault ? "True" : "False"));
             sw.WriteLine("DefaultPath:" + server.DefaultPath);
             sw.WriteLine("Status:" + (server.Status ? "True" : "False"));
-            sw.WriteLine("Pic:" + (self.imagePath != null && self.imagePath != "default-user-image.png" ? "Custom" : "Default"));
+            sw.WriteLine("Pic:" + (self.imagePath != null && self.imagePath != @"icons\default-user-image.png" ? "Custom" : "Default"));
             sw.WriteLine("PublicName:" + self.publicName);
             sw.WriteLine("Name:" + self.name);
             sw.WriteLine("Surname:" + self.surname);
