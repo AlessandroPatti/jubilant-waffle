@@ -21,10 +21,11 @@ namespace Jubilant_Waffle {
         const string iconFile = "waffle_icon_3x_multiple.ico";
         static System.Windows.Forms.NotifyIcon trayIcon;
 
-        private static System.Threading.Mutex mutex = null;
+        public static Wizard w;
+        public static Boolean wizardRes = true;
+        public static System.Threading.Mutex mutex = null;
         [STAThread]
         static void Main(string[] argv) {
-
             #region
             //If the following line is enable ImageList is not going to be populated
             //Application.EnableVisualStyles();
@@ -46,9 +47,18 @@ namespace Jubilant_Waffle {
             #region Setup application
             //TODO Name should be taken from a config file
             users = new System.Collections.Generic.Dictionary<string, User>();
-            self = new User("Alessandro", GetMyIP());
+            self = new User("User", GetMyIP());
             server = new Server();
             client = new Client();
+
+            if (!System.IO.File.Exists("settings.ini")) {
+                w = new Wizard();
+                w.Show();
+                Application.Run(w);
+            }
+            if (!wizardRes)
+                Environment.Exit(0);
+           // ReadSettingsFile();
             #endregion
             #region main box
             mainbox = new Main();
@@ -104,7 +114,43 @@ namespace Jubilant_Waffle {
             Application.Run();
 
         }
+        
+        private static void ReadSettingsFile() {
+            string param, value;
+            foreach(var line in System.IO.File.ReadLines("settings.ini")) {
+                param = line.Substring(0, line.IndexOf(":"));
+                value = line.Substring(line.IndexOf(":")+1);
+                switch (param) {
+                    case "Autosave":
+                        server.AutoSave = value == "True" ? true : false;
+                        break;
+                    case "UseDefault":
+                        server.UseDefault = value == "True" ? true : false;
+                        break;
+                    case "DefaultPath":
+                        server.DefaultPath = value;
+                        break;
+                    case "Status":
+                        server.Status = value == "True" ? true : false;
+                        break;
+                    case "Pic":
+                        self.imagePath = value == "Custom" ? "user.png" : "default-user-image.png";
+                        break;
+                    case "PublicName":
+                        self.name = value;
+                        break;
+                }
+            }
+        }
 
+        public static void WriteSettingsFile() {
+            System.IO.StreamWriter sw = new System.IO.StreamWriter("settings.ini");
+            sw.WriteLine("Autosave:" + (server.AutoSave ? "True" : "False"));
+            sw.WriteLine("UseDefault:" + (server.UseDefault ? "True" : "False"));
+            sw.WriteLine("DefaultPath:" + server.DefaultPath);
+            sw.WriteLine("Status:" + (server.Status ? "True" : "False"));
+            sw.Close();
+        }
         private static void ShowMainBox(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 mainbox.Show();
@@ -178,7 +224,6 @@ namespace Jubilant_Waffle {
             throw new Exception("No network adapters with an IPv4 address in the system!");
 
         }
-
         public static System.Net.IPAddress GetSubnetMask(System.Net.IPAddress address) {
             foreach (NetworkInterface adapter in NetworkInterface.GetAllNetworkInterfaces()) {
                 foreach (UnicastIPAddressInformation unicastIPAddressInformation in adapter.GetIPProperties().UnicastAddresses) {
@@ -191,7 +236,6 @@ namespace Jubilant_Waffle {
             }
             throw new ArgumentException(string.Format("Can't find subnetmask for IP address '{0}'", address));
         }
-
         public static System.Net.IPAddress GetBroadcastAddress(this System.Net.IPAddress address, IPAddress subnetMask) {
             byte[] ipAdressBytes = address.GetAddressBytes();
             byte[] subnetMaskBytes = subnetMask.GetAddressBytes();

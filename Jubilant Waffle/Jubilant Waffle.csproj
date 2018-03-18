@@ -72,6 +72,12 @@
       <DependentUpon>Server.cs</DependentUpon>
     </Compile>
     <Compile Include="User.cs" />
+    <Compile Include="Wizard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Wizard.Designer.cs">
+      <DependentUpon>Wizard.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="Client.resx">
       <DependentUpon>Client.cs</DependentUpon>
     </EmbeddedResource>
@@ -89,6 +95,9 @@
     </Compile>
     <EmbeddedResource Include="Server.resx">
       <DependentUpon>Server.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Wizard.resx">
+      <DependentUpon>Wizard.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

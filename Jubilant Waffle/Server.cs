@@ -20,17 +20,40 @@ namespace Jubilant_Waffle {
         System.Net.Sockets.TcpListener tcp;
         #endregion
 
-        public string defaultPath;
-        public bool _useDefault;
-        public bool _autoSave;
-        bool _cancelCurrent = false; // This is used to undo the current transfer
-        bool _status = false; //The status true means online.
+        private string _defaultPath = "";
+        private bool _useDefault = false;
+        private bool _autoSave = false;
+        private bool _cancelCurrent = false; // This is used to undo the current transfer
+        private bool _status = false; //The status true means online.
 
         const int port = 20000;
         const int timeout = 200000;
         const int timer = 2000;
 
-        
+        public bool UseDefault {
+            get {
+                return _useDefault;
+            }
+            set {
+                _useDefault = value;
+            }
+        }
+        public string DefaultPath {
+            get {
+                return _defaultPath;
+            }
+            set {
+                _defaultPath = value;
+            }
+        }
+        public bool AutoSave {
+            get {
+                return _autoSave;
+            }
+            set {
+                _autoSave = value;
+            }
+        }
         public bool Status {
             get {
                 return _status;
@@ -253,7 +276,7 @@ namespace Jubilant_Waffle {
             filename = System.Text.Encoding.ASCII.GetString(data);
             #endregion
             #region Response
-            if (!_autoSave) {
+            if (!AutoSave) {
                 //TODO Prompt accept connection
                 string name;
                 lock (Program.users) {
@@ -271,7 +294,7 @@ namespace Jubilant_Waffle {
                     return;
                 }
             }
-            if (!_useDefault) {
+            if (!UseDefault) {
                 DialogResult res = FolderSelectionDialog.ShowDialog();
                 if (res == DialogResult.OK) {
                     path = FolderSelectionDialog.SelectedPath + @"\" + filename;
@@ -281,7 +304,7 @@ namespace Jubilant_Waffle {
                 }
             }
             else {
-                path = defaultPath + @"\" + filename;
+                path = DefaultPath + @"\" + filename;
             }
             #endregion
             #region Read file size

@@ -99,17 +99,17 @@ namespace Jubilant_Waffle {
 
         private void ToggleDefaultFolder(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                Program.server._useDefault = !Program.server._useDefault;
-                DefaultFolderIcon.ImageLocation = Program.server._useDefault ? "folder_default_on.png" : "folder_default_off.png";
-                string tooltip = Program.server._useDefault ? "Disable default folder" : "Enable default folder";
+                Program.server.UseDefault = !Program.server.UseDefault;
+                DefaultFolderIcon.ImageLocation = Program.server.UseDefault ? "folder_default_on.png" : "folder_default_off.png";
+                string tooltip = Program.server.UseDefault ? "Disable default folder" : "Enable default folder";
                 this.IconToolTip.SetToolTip(this.DefaultFolderIcon, tooltip);
             }
         }
         private void ToggleAutosave(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                Program.server._autoSave = !Program.server._autoSave;
-                AutoSaveIcon.ImageLocation = Program.server._autoSave ? "autosave_on.png" : "autosave_off.png";
-                string tooltip = Program.server._autoSave ? "Ask permission for each transfer" : "Automatically accept incoming requests";
+                Program.server.AutoSave = !Program.server.AutoSave;
+                AutoSaveIcon.ImageLocation = Program.server.AutoSave ? "autosave_on.png" : "autosave_off.png";
+                string tooltip = Program.server.AutoSave ? "Ask permission for each transfer" : "Automatically accept incoming requests";
                 this.IconToolTip.SetToolTip(this.AutoSaveIcon, tooltip);
             }
         }

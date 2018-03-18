@@ -55,7 +55,6 @@ namespace Jubilant_Waffle {
             #endregion
         }
 
-
         private void PreventClose(object sender, FormClosingEventArgs e) {
             e.Cancel = true;
         }
