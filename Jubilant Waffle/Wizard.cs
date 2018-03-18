@@ -45,6 +45,9 @@ namespace Jubilant_Waffle {
                     if (System.IO.File.Exists(Program.AppDataFolder + @"\user.png")) {
                         System.IO.File.Delete(Program.AppDataFolder + @"\user.png");
                     }
+                    if (!System.IO.Directory.Exists(Program.AppDataFolder)) {
+                        System.IO.Directory.CreateDirectory(Program.AppDataFolder);
+                    }
                     bmp.Save(Program.AppDataFolder + @"\user.png", System.Drawing.Imaging.ImageFormat.Png);
                 }
                 else

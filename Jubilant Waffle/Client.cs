@@ -182,6 +182,17 @@ namespace Jubilant_Waffle {
                 SendFile(fts.path, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), port));
             }
         }
+
+        delegate void PerformStepDelegate(ProgressBar progress);
+        void PerformStep(ProgressBar pbar) {
+            if (pbar.InvokeRequired) {
+                PerformStepDelegate callback = new PerformStepDelegate(PerformStep);
+                pbar.Invoke(callback, pbar);
+            }
+            else {
+                pbar.PerformStep();
+            }
+        }
         private void SendFile(string path, System.Net.IPEndPoint IPEndPoint) {
             /// The file is sent using the following sintax
             ///     - Control message 'FILE!'
@@ -283,7 +294,7 @@ namespace Jubilant_Waffle {
                 dataChannel.GetStream().Write(data, 0, sizeOfLastRead);
                 dataSent += sizeOfLastRead;
                 System.Diagnostics.Debug.WriteLine("Sent " + dataSent.ToString() + "B out of " + fileSize.ToString() + "B");
-                pbar.PerformStep();
+                PerformStep(pbar);
             }
             /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
             _cancelCurrent = false;
