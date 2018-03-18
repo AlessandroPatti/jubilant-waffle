@@ -79,7 +79,7 @@ namespace Jubilant_Waffle {
                     UserListView.LargeImageList = imgl;
                     var i = 0;
                     foreach (User u in Program.users.Values) {
-                        UserListView.Items.Add(u.ip, u.name, i++);
+                        UserListView.Items.Add(u.ip, u.publicName, i++);
                         UserListView.Items[i - 1].ImageKey = u.ip;
                     }
                 }

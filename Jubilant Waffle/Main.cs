@@ -37,16 +37,20 @@ namespace Jubilant_Waffle {
             /* Create a hover effect that changes the background when mouse is over */
             DefaultFolderIcon.MouseEnter += (object s, EventArgs e) => DefaultFolderIcon.BackColor = Color.LightBlue;
             DefaultFolderIcon.MouseLeave += (object s, EventArgs e) => DefaultFolderIcon.BackColor = Color.White;
+            StatusIcon.MouseEnter += (object s, EventArgs e) => StatusIcon.BackColor = Color.LightBlue;
+            StatusIcon.MouseLeave += (object s, EventArgs e) => StatusIcon.BackColor = Color.White;
             AutoSaveIcon.MouseEnter += (object s, EventArgs e) => AutoSaveIcon.BackColor = Color.LightBlue;
             AutoSaveIcon.MouseLeave += (object s, EventArgs e) => AutoSaveIcon.BackColor = Color.White;
             SettingsIcon.MouseEnter += (object s, EventArgs e) => SettingsIcon.BackColor = Color.LightBlue;
             SettingsIcon.MouseLeave += (object s, EventArgs e) => SettingsIcon.BackColor = Color.White;
+
             TransfersOutLabel.MouseEnter += (object s, EventArgs e) => TransfersOutLabel.BackColor = Color.LightBlue;
             TransfersOutLabel.MouseLeave += (object s, EventArgs e) => TransfersOutLabel.BackColor = Color.White;
             TransfersInLabel.MouseEnter += (object s, EventArgs e) => TransfersInLabel.BackColor = Color.LightBlue;
             TransfersInLabel.MouseLeave += (object s, EventArgs e) => TransfersInLabel.BackColor = Color.White;
             /* Reacts to clicks */
             DefaultFolderIcon.MouseClick += ToggleDefaultFolder;
+            StatusIcon.MouseClick += ToggleStatus;
             AutoSaveIcon.MouseClick += ToggleAutosave;
             #endregion
             #region Progress Bars
@@ -91,12 +95,20 @@ namespace Jubilant_Waffle {
                 ProgressBarsOut.Add(name + i.ToString(), pbar);
                 */
                 ProgressBarsOut.Add(name, pbar);
-//                TransferOutBox.BeginUpdate();
+                //                TransferOutBox.BeginUpdate();
                 TransferOutBox.Items.Add(pbar);
                 TransferOutBox.Update();
             }
         }
 
+        private void ToggleStatus(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                Program.server.Status = !Program.server.Status;
+                StatusIcon.ImageLocation = Program.server.Status ? "status_on.png" : "status_off.png";
+                string tooltip = Program.server.Status ? "Go offline" : "Go online";
+                this.IconToolTip.SetToolTip(this.StatusIcon, tooltip);
+            }
+        }
         private void ToggleDefaultFolder(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 Program.server.UseDefault = !Program.server.UseDefault;
@@ -159,6 +171,7 @@ namespace Jubilant_Waffle {
             myPen.Dispose();
         }
         private void OnPaint(object sender, System.Windows.Forms.PaintEventArgs e) {
+            LoadIcons(null, null);
             CreateSeparator();
             if (TransferInBox.Visible) {
                 CreateLineBelow(TransfersInLabel);
@@ -177,7 +190,20 @@ namespace Jubilant_Waffle {
         private void ChangeSettings(object sender, EventArgs e) {
             Wizard w = new Wizard();
             w.ShowDialog();
-            
+
+        }
+
+        private void LoadIcons(object sender, EventArgs e) {
+            string tooltip;
+            AutoSaveIcon.ImageLocation = Program.server.AutoSave ? "autosave_on.png" : "autosave_off.png";
+            tooltip = Program.server.AutoSave ? "Ask permission for each transfer" : "Automatically accept incoming requests";
+            this.IconToolTip.SetToolTip(this.AutoSaveIcon, tooltip);
+            DefaultFolderIcon.ImageLocation = Program.server.UseDefault ? "folder_default_on.png" : "folder_default_off.png";
+            tooltip = Program.server.UseDefault ? "Disable default folder" : "Enable default folder";
+            this.IconToolTip.SetToolTip(this.DefaultFolderIcon, tooltip);
+            StatusIcon.ImageLocation = Program.server.Status ? "status_on.png" : "status_off.png";
+            tooltip = Program.server.Status ? "Go offline" : "Go online";
+            this.IconToolTip.SetToolTip(this.StatusIcon, tooltip);
         }
     }
 }

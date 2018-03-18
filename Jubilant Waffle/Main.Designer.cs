@@ -24,7 +24,7 @@
         /// </summary>
         private void InitializeComponent() {
             this.components = new System.ComponentModel.Container();
-            this.DefaultFolderIcon = new System.Windows.Forms.PictureBox();
+            this.StatusIcon = new System.Windows.Forms.PictureBox();
             this.AutoSaveIcon = new System.Windows.Forms.PictureBox();
             this.TransfersInLabel = new System.Windows.Forms.Label();
             this.TransfersOutLabel = new System.Windows.Forms.Label();
@@ -32,30 +32,32 @@
             this.IconToolTip = new System.Windows.Forms.ToolTip(this.components);
             this.TransferInBox = new System.Windows.Forms.ListBox();
             this.TransferOutBox = new System.Windows.Forms.ListBox();
-            ((System.ComponentModel.ISupportInitialize)(this.DefaultFolderIcon)).BeginInit();
+            this.DefaultFolderIcon = new System.Windows.Forms.PictureBox();
+            ((System.ComponentModel.ISupportInitialize)(this.StatusIcon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.AutoSaveIcon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SettingsIcon)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DefaultFolderIcon)).BeginInit();
             this.SuspendLayout();
             // 
-            // DefaultFolderIcon
+            // StatusIcon
             // 
-            this.DefaultFolderIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.DefaultFolderIcon.BackColor = System.Drawing.Color.White;
-            this.DefaultFolderIcon.ImageLocation = "folder_default_off.png";
-            this.DefaultFolderIcon.Location = new System.Drawing.Point(315, 0);
-            this.DefaultFolderIcon.Name = "DefaultFolderIcon";
-            this.DefaultFolderIcon.Size = new System.Drawing.Size(35, 35);
-            this.DefaultFolderIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
-            this.DefaultFolderIcon.TabIndex = 0;
-            this.DefaultFolderIcon.TabStop = false;
-            this.IconToolTip.SetToolTip(this.DefaultFolderIcon, "Enable default folder");
+            this.StatusIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.StatusIcon.BackColor = System.Drawing.Color.White;
+            this.StatusIcon.ImageLocation = "status_off.png";
+            this.StatusIcon.Location = new System.Drawing.Point(315, 0);
+            this.StatusIcon.Name = "StatusIcon";
+            this.StatusIcon.Size = new System.Drawing.Size(35, 35);
+            this.StatusIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.StatusIcon.TabIndex = 0;
+            this.StatusIcon.TabStop = false;
+            this.IconToolTip.SetToolTip(this.StatusIcon, "Go online");
             // 
             // AutoSaveIcon
             // 
             this.AutoSaveIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.AutoSaveIcon.BackColor = System.Drawing.Color.White;
             this.AutoSaveIcon.ImageLocation = "autosave_off.png";
-            this.AutoSaveIcon.Location = new System.Drawing.Point(280, 0);
+            this.AutoSaveIcon.Location = new System.Drawing.Point(245, 0);
             this.AutoSaveIcon.Name = "AutoSaveIcon";
             this.AutoSaveIcon.Size = new System.Drawing.Size(35, 35);
             this.AutoSaveIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
@@ -125,6 +127,19 @@
             this.TransferOutBox.TabIndex = 7;
             this.TransferOutBox.Visible = false;
             // 
+            // DefaultFolderIcon
+            // 
+            this.DefaultFolderIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.DefaultFolderIcon.BackColor = System.Drawing.Color.White;
+            this.DefaultFolderIcon.ImageLocation = "folder_default_off.png";
+            this.DefaultFolderIcon.Location = new System.Drawing.Point(280, 0);
+            this.DefaultFolderIcon.Name = "DefaultFolderIcon";
+            this.DefaultFolderIcon.Size = new System.Drawing.Size(35, 35);
+            this.DefaultFolderIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
+            this.DefaultFolderIcon.TabIndex = 8;
+            this.DefaultFolderIcon.TabStop = false;
+            this.IconToolTip.SetToolTip(this.DefaultFolderIcon, "Enable default folder");
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -132,13 +147,14 @@
             this.BackColor = System.Drawing.SystemColors.Window;
             this.ClientSize = new System.Drawing.Size(384, 361);
             this.ControlBox = false;
+            this.Controls.Add(this.DefaultFolderIcon);
             this.Controls.Add(this.TransferOutBox);
             this.Controls.Add(this.TransferInBox);
             this.Controls.Add(this.SettingsIcon);
             this.Controls.Add(this.TransfersOutLabel);
             this.Controls.Add(this.TransfersInLabel);
             this.Controls.Add(this.AutoSaveIcon);
-            this.Controls.Add(this.DefaultFolderIcon);
+            this.Controls.Add(this.StatusIcon);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "Main";
             this.Opacity = 0.95D;
@@ -146,11 +162,13 @@
             this.Text = "Main";
             this.Deactivate += new System.EventHandler(this.HideOnClickOut);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.PreventClose);
+            this.Load += new System.EventHandler(this.LoadIcons);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.OnPaint);
             this.Leave += new System.EventHandler(this.HideOnClickOut);
-            ((System.ComponentModel.ISupportInitialize)(this.DefaultFolderIcon)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.StatusIcon)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.AutoSaveIcon)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.SettingsIcon)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DefaultFolderIcon)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -158,7 +176,7 @@
 
         #endregion
 
-        private System.Windows.Forms.PictureBox DefaultFolderIcon;
+        private System.Windows.Forms.PictureBox StatusIcon;
         private System.Windows.Forms.PictureBox AutoSaveIcon;
         private System.Windows.Forms.Label TransfersInLabel;
         private System.Windows.Forms.Label TransfersOutLabel;
@@ -166,5 +184,6 @@
         private System.Windows.Forms.ToolTip IconToolTip;
         private System.Windows.Forms.ListBox TransferInBox;
         private System.Windows.Forms.ListBox TransferOutBox;
+        private System.Windows.Forms.PictureBox DefaultFolderIcon;
     }
 }

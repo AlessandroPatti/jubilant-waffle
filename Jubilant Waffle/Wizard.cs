@@ -17,61 +17,41 @@ namespace Jubilant_Waffle {
         }
 
         private void LoadConfiguration(object sender, EventArgs e) {
-            if (System.IO.File.Exists("settings.ini")) {
-                string param, value;
-                foreach (var line in System.IO.File.ReadLines("settings.ini")) {
-                    param = line.Substring(0, line.IndexOf(":"));
-                    value = line.Substring(line.IndexOf(":") + 1);
-                    switch (param) {
-                        case "Name":
-                            NameBox.Text = value;
-                            break;
-                        case "Surname":
-                            SurnameBox.Text = value;
-                            break;
-                        case "Autosave":
-                            AutoSaveCheckbox.Checked = value == "True" ? true : false;
-                            break;
-                        case "UseDefault":
-                            UseDefaultCheckbox.Checked = value == "True" ? true : false;
-                            break;
-                        case "DefaultPath":
-                            DefaultPathBox.Text = value;
-                            break;
-                        case "Pic":
-                            UserPicBox.ImageLocation = value == "Custom" && System.IO.File.Exists("user.png") ? "user.png" : "default-user-image.png";
-                            break;
-                        case "PublicName":
-                            PublicNameBox.Text = value;
-                            break;
-                    }
-                }
-            }
+            NameBox.Text = Program.self.name;
+            SurnameBox.Text = Program.self.surname;
+            PublicNameBox.Text = Program.self.publicName;
+            AutoSaveCheckbox.Checked = Program.server.AutoSave;
+            UseDefaultCheckbox.Checked = Program.server.UseDefault;
+            DefaultPathBox.Text = Program.server.DefaultPath;
+            UserPicBox.ImageLocation = Program.self.imagePath;
+        }
+
+        private void WriteConfiguration() {
+            Program.self.name = NameBox.Text;
+            Program.self.surname = SurnameBox.Text;
+            Program.self.publicName = PublicNameBox.Text;
+            Program.server.AutoSave = AutoSaveCheckbox.Checked;
+            Program.server.UseDefault = UseDefaultCheckbox.Checked;
+            Program.server.DefaultPath = DefaultPathBox.Text;
         }
 
         private void ConfirmW(object sender, EventArgs e) {
             this.Hide();
-            System.IO.StreamWriter sw = new System.IO.StreamWriter("settings.ini");
-            sw.WriteLine("Name:" + NameBox.Text);
-            sw.WriteLine("Surname:" + SurnameBox.Text);
-            sw.WriteLine("PublicName:" + PublicNameBox.Text);
-            sw.WriteLine("DefaultPath:" + DefaultPathBox.Text);
-            sw.WriteLine("AutoSave:" + (AutoSaveCheckbox.Checked ? "True" : "False"));
-            sw.WriteLine("UseDefault:" + (UseDefaultCheckbox.Checked ? "True" : "False"));
-            sw.WriteLine("Status:False");
-            sw.WriteLine("Pic:" + (UserPicBox.ImageLocation == "default-user-image.png" ? "Default" : "Custom"));
-            sw.Close();
-            if(UserPicBox.ImageLocation != "user.png" && UserPicBox.ImageLocation != "default-user-image.png")
-            if ((new System.IO.FileInfo(UserPicBox.ImageLocation)).Extension != "png") {
-                Image img = Image.FromFile(UserPicBox.ImageLocation);
-                Bitmap bmp = new Bitmap(img);
-                if (System.IO.File.Exists("user.png")) {
-                    System.IO.File.Delete("user.png");
+            WriteConfiguration();
+            if (UserPicBox.ImageLocation != "user.png" && UserPicBox.ImageLocation != "default-user-image.png")
+                if ((new System.IO.FileInfo(UserPicBox.ImageLocation)).Extension != "png") {
+                    Image img = Image.FromFile(UserPicBox.ImageLocation);
+                    Bitmap bmp = new Bitmap(img);
+                    if (System.IO.File.Exists("user.png")) {
+                        System.IO.File.Delete("user.png");
+                    }
+                    bmp.Save("user.png", System.Drawing.Imaging.ImageFormat.Png);
                 }
-                bmp.Save("user.png", System.Drawing.Imaging.ImageFormat.Png);
+                else
+                    System.IO.File.Copy(UserPicBox.ImageLocation, "user.png");
+            if (UserPicBox.ImageLocation != "user.png" && UserPicBox.ImageLocation != "default-user-image.png") {
+                Program.self.imagePath = "user.png";
             }
-            else
-                System.IO.File.Copy(UserPicBox.ImageLocation, "user.png");
             lock (Program.mutex) {
                 Program.wizardRes = true;
                 System.Threading.Monitor.PulseAll(Program.mutex);
@@ -119,6 +99,6 @@ namespace Jubilant_Waffle {
                 }
             }
         }
-        
+
     }
 }

@@ -47,18 +47,22 @@ namespace Jubilant_Waffle {
             #region Setup application
             //TODO Name should be taken from a config file
             users = new System.Collections.Generic.Dictionary<string, User>();
-            self = new User("User", GetMyIP());
+            self = new User("", GetMyIP(), "default-user-image.png");
             server = new Server();
             client = new Client();
 
             if (!System.IO.File.Exists("settings.ini")) {
+                server.DefaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Jubilant Waffle";
                 w = new Wizard();
                 w.Show();
                 Application.Run(w);
+                WriteSettingsFile();
+            }
+            else {
+                ReadSettingsFile();
             }
             if (!wizardRes)
                 Environment.Exit(0);
-           // ReadSettingsFile();
             #endregion
             #region main box
             mainbox = new Main();
@@ -137,18 +141,28 @@ namespace Jubilant_Waffle {
                         self.imagePath = value == "Custom" ? "user.png" : "default-user-image.png";
                         break;
                     case "PublicName":
+                        self.publicName = value;
+                        break;
+                    case "Name":
                         self.name = value;
+                        break;
+                    case "Surame":
+                        self.surname = value;
                         break;
                 }
             }
         }
 
-        public static void WriteSettingsFile() {
+        private static void WriteSettingsFile() {
             System.IO.StreamWriter sw = new System.IO.StreamWriter("settings.ini");
             sw.WriteLine("Autosave:" + (server.AutoSave ? "True" : "False"));
             sw.WriteLine("UseDefault:" + (server.UseDefault ? "True" : "False"));
             sw.WriteLine("DefaultPath:" + server.DefaultPath);
             sw.WriteLine("Status:" + (server.Status ? "True" : "False"));
+            sw.WriteLine("Pic:" + (self.imagePath != null && self.imagePath != "default-user-image.png" ? "Custom" : "Default"));
+            sw.WriteLine("PublicName:" + self.publicName);
+            sw.WriteLine("Name:" + self.name);
+            sw.WriteLine("Surname:" + self.surname);
             sw.Close();
         }
         private static void ShowMainBox(object sender, MouseEventArgs e) {
@@ -177,6 +191,7 @@ namespace Jubilant_Waffle {
             RemoveRegistryEntry(@"Software\Classes\Directory\shell\jubilant-waffle");
             #endregion
             trayIcon.Visible = false;
+            WriteSettingsFile();
             Environment.Exit(0);
         }
 

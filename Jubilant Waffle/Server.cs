@@ -21,8 +21,8 @@ namespace Jubilant_Waffle {
         #endregion
 
         private string _defaultPath = "";
-        private bool _useDefault = false;
-        private bool _autoSave = false;
+        private bool _useDefault = true;
+        private bool _autoSave = true;
         private bool _cancelCurrent = false; // This is used to undo the current transfer
         private bool _status = false; //The status true means online.
 
@@ -176,7 +176,7 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Send name lenght
-            data = System.BitConverter.GetBytes(Program.self.name.Length);
+            data = System.BitConverter.GetBytes(Program.self.publicName.Length);
             try {
                 client.GetStream().Write(data, 0, data.Length);
             }
@@ -187,7 +187,7 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Send name
-            data = System.Text.Encoding.ASCII.GetBytes(Program.self.name);
+            data = System.Text.Encoding.ASCII.GetBytes(Program.self.publicName);
             try {
                 client.GetStream().Write(data, 0, data.Length);
             }
@@ -281,7 +281,7 @@ namespace Jubilant_Waffle {
                 string name;
                 lock (Program.users) {
                     try {
-                        name = Program.users[((System.Net.IPEndPoint)client.Client.RemoteEndPoint).Address.ToString()].name;
+                        name = Program.users[((System.Net.IPEndPoint)client.Client.RemoteEndPoint).Address.ToString()].publicName;
                     }
                     catch (KeyNotFoundException e) {
                         //TODO maybe ask for name?
