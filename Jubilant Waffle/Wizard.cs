@@ -16,7 +16,41 @@ namespace Jubilant_Waffle {
 
         }
 
+        private void LoadConfiguration(object sender, EventArgs e) {
+            if (System.IO.File.Exists("settings.ini")) {
+                string param, value;
+                foreach (var line in System.IO.File.ReadLines("settings.ini")) {
+                    param = line.Substring(0, line.IndexOf(":"));
+                    value = line.Substring(line.IndexOf(":") + 1);
+                    switch (param) {
+                        case "Name":
+                            NameBox.Text = value;
+                            break;
+                        case "Surname":
+                            SurnameBox.Text = value;
+                            break;
+                        case "Autosave":
+                            AutoSaveCheckbox.Checked = value == "True" ? true : false;
+                            break;
+                        case "UseDefault":
+                            UseDefaultCheckbox.Checked = value == "True" ? true : false;
+                            break;
+                        case "DefaultPath":
+                            DefaultPathBox.Text = value;
+                            break;
+                        case "Pic":
+                            UserPicBox.ImageLocation = value == "Custom" && System.IO.File.Exists("user.png") ? "user.png" : "default-user-image.png";
+                            break;
+                        case "PublicName":
+                            PublicNameBox.Text = value;
+                            break;
+                    }
+                }
+            }
+        }
+
         private void ConfirmW(object sender, EventArgs e) {
+            this.Hide();
             System.IO.StreamWriter sw = new System.IO.StreamWriter("settings.ini");
             sw.WriteLine("Name:" + NameBox.Text);
             sw.WriteLine("Surname:" + SurnameBox.Text);
@@ -25,10 +59,15 @@ namespace Jubilant_Waffle {
             sw.WriteLine("AutoSave:" + (AutoSaveCheckbox.Checked ? "True" : "False"));
             sw.WriteLine("UseDefault:" + (UseDefaultCheckbox.Checked ? "True" : "False"));
             sw.WriteLine("Status:False");
+            sw.WriteLine("Pic:" + (UserPicBox.ImageLocation == "default-user-image.png" ? "Default" : "Custom"));
             sw.Close();
+            if(UserPicBox.ImageLocation != "user.png" && UserPicBox.ImageLocation != "default-user-image.png")
             if ((new System.IO.FileInfo(UserPicBox.ImageLocation)).Extension != "png") {
                 Image img = Image.FromFile(UserPicBox.ImageLocation);
                 Bitmap bmp = new Bitmap(img);
+                if (System.IO.File.Exists("user.png")) {
+                    System.IO.File.Delete("user.png");
+                }
                 bmp.Save("user.png", System.Drawing.Imaging.ImageFormat.Png);
             }
             else
@@ -80,5 +119,6 @@ namespace Jubilant_Waffle {
                 }
             }
         }
+        
     }
 }

@@ -173,5 +173,11 @@ namespace Jubilant_Waffle {
                 ;
             }
         }
+
+        private void ChangeSettings(object sender, EventArgs e) {
+            Wizard w = new Wizard();
+            w.ShowDialog();
+            
+        }
     }
 }

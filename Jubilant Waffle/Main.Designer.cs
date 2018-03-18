@@ -101,6 +101,7 @@
             this.SettingsIcon.TabIndex = 5;
             this.SettingsIcon.TabStop = false;
             this.IconToolTip.SetToolTip(this.SettingsIcon, "Access application settings");
+            this.SettingsIcon.Click += new System.EventHandler(this.ChangeSettings);
             // 
             // TransferInBox
             // 

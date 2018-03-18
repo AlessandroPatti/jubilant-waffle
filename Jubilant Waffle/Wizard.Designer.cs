@@ -207,6 +207,7 @@
             this.Name = "Wizard";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Wizard";
+            this.Load += new System.EventHandler(this.LoadConfiguration);
             ((System.ComponentModel.ISupportInitialize)(this.UserPicBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CameraPicBox)).EndInit();
             this.ResumeLayout(false);
