@@ -23,6 +23,7 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Client));
             this.UserListView = new System.Windows.Forms.ListView();
             this.Confirm = new System.Windows.Forms.Button();
             this.Cancel = new System.Windows.Forms.Button();
@@ -30,6 +31,7 @@
             // 
             // UserListView
             // 
+            this.UserListView.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.UserListView.Location = new System.Drawing.Point(12, 12);
             this.UserListView.Name = "UserListView";
             this.UserListView.Size = new System.Drawing.Size(760, 494);
@@ -62,17 +64,18 @@
             this.AcceptButton = this.Cancel;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.Control;
+            this.BackColor = System.Drawing.SystemColors.Window;
             this.CancelButton = this.Confirm;
             this.ClientSize = new System.Drawing.Size(784, 561);
             this.ControlBox = false;
             this.Controls.Add(this.Cancel);
             this.Controls.Add(this.Confirm);
             this.Controls.Add(this.UserListView);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Client";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Client";
+            this.Text = "Share With...";
             this.ResumeLayout(false);
 
         }

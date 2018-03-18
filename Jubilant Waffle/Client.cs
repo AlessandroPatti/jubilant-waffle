@@ -3,18 +3,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Jubilant_Waffle {
-    public struct FileToSend {
-        public string path;
-        public string ip;
-        public Control[] controls;
-        public bool cancel;
-    }
     public partial class Client : Form {
         /* Map of the users known. It indexed by IP address since each connection brings the IP */
         System.Collections.Generic.LinkedList<FileToSend> files;
@@ -25,6 +20,7 @@ namespace Jubilant_Waffle {
         System.Net.Sockets.TcpListener instancesListener;
         const int port = 20000;
         const int timeout = 200000;
+        const int bufferSize = 4 * 1024 * 1024;
         public Client() {
             udp = new System.Net.Sockets.UdpClient(port);
             files = new System.Collections.Generic.LinkedList<FileToSend>();
@@ -70,7 +66,7 @@ namespace Jubilant_Waffle {
             else {
                 ImageList imgl = new ImageList();
                 Image img;
-                imgl.ImageSize = new Size(200, 200);
+                imgl.ImageSize = new Size(150, 150);
                 imgl.ColorDepth = ColorDepth.Depth32Bit;
                 UserListView.Clear();
                 lock (Program.users) {
@@ -90,6 +86,7 @@ namespace Jubilant_Waffle {
                 this.ShowInTaskbar = true;
             }
         }
+        
 
         static public void EnqueueMessage(string msg) {
             System.Net.Sockets.TcpClient client;
@@ -153,10 +150,9 @@ namespace Jubilant_Waffle {
                     data = new byte[lenght];
                     npss.Read(data, 0, data.Length);
                     msg = System.Text.Encoding.ASCII.GetString(data);
-                    fts = new FileToSend { path = path, ip = msg };
-                    fts.controls = Program.mainbox.AddProgressBarOut(fts.path, Main.Direction.In);
+                    fts = new FileToSend (path, msg, bufferSize/1024/1024);
+                    fts.AddToPanel(Program.mainbox.ProgressBarsOutPanel);
                     tmp.Add(fts);
-                    
                 }
                 npss.Close();
                 #endregion
@@ -184,10 +180,10 @@ namespace Jubilant_Waffle {
                     fts = files.First.Value;
                     files.RemoveFirst();
                 }
-                SendFile(fts, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), port));
+                if(!fts.cancel)
+                    SendFile(fts, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), port));
             }
         }
-
         private void SendFile(FileToSend fts, System.Net.IPEndPoint IPEndPoint) {
             /// The file is sent using the following sintax
             ///     - Control message 'FILE!'
@@ -202,10 +198,7 @@ namespace Jubilant_Waffle {
             System.IO.FileStream fs; //The file stream to be send 
             byte[] data; // buffer for sockets
             int nameLenght;
-            long fileSize; // The size of the file to be sent
             long dataSent = 0; // The amount of data already sent
-            Control[] controls;
-            ProgressBar pbar;
             #endregion
             #region Open connection
             data = System.Text.Encoding.ASCII.GetBytes("FILE!");
@@ -250,8 +243,7 @@ namespace Jubilant_Waffle {
             //TODO zip the file
             #endregion
             #region Send file length
-            fileSize = (new System.IO.FileInfo(fts.path)).Length;//TODO update with size of archive when compression is implemented
-            data = System.BitConverter.GetBytes(fileSize);
+            data = System.BitConverter.GetBytes(fts.fileSize);
             try {
                 dataChannel.GetStream().Write(data, 0, data.Length);
             }
@@ -261,9 +253,6 @@ namespace Jubilant_Waffle {
                 return;
             }
             #endregion
-            #region Set Progress Bar
-            Program.mainbox.SetProgressBar(fts.controls, 0, (int)Math.Ceiling((double)fileSize / (1024 * 1024)), 4);
-            #endregion;
             #region Send file
             /* Open the file */
             try {
@@ -276,11 +265,11 @@ namespace Jubilant_Waffle {
             }
 
             /* Send the file */
-            data = new byte[4 * 1024 * 1024];
-            while (dataSent < fileSize && !_cancelCurrent) {
-                int sizeOfLastRead = 0;
+            data = new byte[bufferSize];
+            int sizeOfLastRead = 0;
+            while (dataSent < fts.fileSize && !fts.cancel) {
                 try {
-                    sizeOfLastRead = fs.Read(data, 0, (int)System.Math.Min(fileSize - dataSent, (long)data.Length));
+                    sizeOfLastRead = fs.Read(data, 0, (int)System.Math.Min(fts.fileSize - dataSent, data.LongLength));
                 }
                 catch {
                     /* Could not read the file. File will not be sent */
@@ -289,8 +278,8 @@ namespace Jubilant_Waffle {
                 }
                 dataChannel.GetStream().Write(data, 0, sizeOfLastRead);
                 dataSent += sizeOfLastRead;
-                System.Diagnostics.Debug.WriteLine("Sent " + dataSent.ToString() + "B out of " + fileSize.ToString() + "B");
-                Program.mainbox.UpdateProgress(fts.controls);
+                System.Diagnostics.Debug.WriteLine("Sent " + dataSent.ToString() + "B out of " + fts.fileSize.ToString() + "B");
+                fts.UpdateProgress();
             }
             /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
             _cancelCurrent = false;

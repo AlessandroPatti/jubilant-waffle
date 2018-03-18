@@ -120,6 +120,7 @@
             // 
             // ProgressBarsOutPanel
             // 
+            this.ProgressBarsOutPanel.AutoScroll = true;
             this.ProgressBarsOutPanel.Location = new System.Drawing.Point(11, 45);
             this.ProgressBarsOutPanel.Name = "ProgressBarsOutPanel";
             this.ProgressBarsOutPanel.Size = new System.Drawing.Size(361, 304);
@@ -127,10 +128,12 @@
             // 
             // ProgressBarsInPanel
             // 
+            this.ProgressBarsInPanel.AutoScroll = true;
             this.ProgressBarsInPanel.Location = new System.Drawing.Point(11, 45);
             this.ProgressBarsInPanel.Name = "ProgressBarsInPanel";
             this.ProgressBarsInPanel.Size = new System.Drawing.Size(361, 304);
             this.ProgressBarsInPanel.TabIndex = 10;
+            this.ProgressBarsInPanel.WrapContents = false;
             // 
             // Main
             // 
@@ -175,7 +178,7 @@
         private System.Windows.Forms.PictureBox SettingsIcon;
         private System.Windows.Forms.ToolTip IconToolTip;
         private System.Windows.Forms.PictureBox DefaultFolderIcon;
-        private System.Windows.Forms.FlowLayoutPanel ProgressBarsOutPanel;
-        private System.Windows.Forms.FlowLayoutPanel ProgressBarsInPanel;
+        public System.Windows.Forms.FlowLayoutPanel ProgressBarsOutPanel;
+        public System.Windows.Forms.FlowLayoutPanel ProgressBarsInPanel;
     }
 }
