@@ -10,9 +10,6 @@ using System.Windows.Forms;
 
 namespace Jubilant_Waffle {
     public partial class Main : Form {
-        public Dictionary<string, ProgressBar> ProgressBarsIn;
-        public Dictionary<string, ProgressBar> ProgressBarsOut;
-        //private Pen pen;
         private Graphics graphics;
         public Main() {
             InitializeComponent();
@@ -54,50 +51,39 @@ namespace Jubilant_Waffle {
             AutoSaveIcon.MouseClick += ToggleAutosave;
             #endregion
             #region Progress Bars
-            ProgressBarsIn = new Dictionary<string, ProgressBar>();
-            ProgressBarsOut = new Dictionary<string, ProgressBar>();
+            //TODO
             #endregion
             #region Initiliaze graphics
             graphics = this.CreateGraphics();
             #endregion
         }
 
-        delegate void AddProgressBarCallback(string name);
-        public void AddProgressBarIn(string name) {
+        delegate ProgressBar AddProgressBarCallback(string name, int min, int max, int step);
+        public ProgressBar AddProgressBarIn(string name, int min, int max, int step) {
             if (this.InvokeRequired) {
                 AddProgressBarCallback callback = new AddProgressBarCallback(AddProgressBarIn);
-                this.Invoke(callback, name);
+                return (ProgressBar)Invoke(callback, name, min, max, step);
             }
             else {
                 ProgressBar pbar = new ProgressBar();
-                pbar.Name = name;
-                int i = 0;
-                while (ProgressBarsIn.ContainsKey(name + i.ToString())) {
-                    i++;
-                }
-                ProgressBarsIn.Add(name + i.ToString(), pbar);
+                throw new NotImplementedException();
+                return pbar;
             }
         }
-        public void AddProgressBarOut(string name) {
+        public ProgressBar AddProgressBarOut(string name, int min, int max, int step) {
             if (this.InvokeRequired) {
                 AddProgressBarCallback callback = new AddProgressBarCallback(AddProgressBarOut);
-                this.Invoke(callback, name);
+                return (ProgressBar)Invoke(callback, name, min, max, step);
             }
             else {
                 ProgressBar pbar = new ProgressBar();
-                pbar.Name = name;
-                /* What if two file with the same name are sent to the same user?
-                 * 
-                 int i = 0;
-                while (ProgressBarsOut.ContainsKey(name + i.ToString())) {
-                    i++;
-                }
-                ProgressBarsOut.Add(name + i.ToString(), pbar);
-                */
-                ProgressBarsOut.Add(name, pbar);
-                //                TransferOutBox.BeginUpdate();
-                TransferOutBox.Items.Add(pbar);
-                TransferOutBox.Update();
+                pbar.Show();
+                pbar.Size = new Size(ProgressBarsOutPanel.Size.Width, 20);
+                pbar.Minimum = min;
+                pbar.Maximum = max;
+                pbar.Step = Math.Min(pbar.Maximum, step);
+                ProgressBarsOutPanel.Controls.Add(pbar);
+                return pbar;
             }
         }
 
@@ -137,8 +123,8 @@ namespace Jubilant_Waffle {
         private void ShowTransferOut(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 #region Show Transfers
-                TransferInBox.Hide();
-                TransferOutBox.Show();
+                ProgressBarsOutPanel.Show();
+                ProgressBarsInPanel.Hide();
                 this.RaisePaintEvent(this, null);
                 #endregion
             }
@@ -146,8 +132,8 @@ namespace Jubilant_Waffle {
         private void ShowTransferIn(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 #region Show Transfers
-                TransferOutBox.Hide();
-                TransferInBox.Show();
+                ProgressBarsInPanel.Show();
+                ProgressBarsOutPanel.Hide();
                 this.RaisePaintEvent(this, null);
                 #endregion              
             }
@@ -173,13 +159,13 @@ namespace Jubilant_Waffle {
         private void OnPaint(object sender, System.Windows.Forms.PaintEventArgs e) {
             LoadIcons(null, null);
             CreateSeparator();
-            if (TransferInBox.Visible) {
+            if (ProgressBarsInPanel.Visible) {
                 CreateLineBelow(TransfersInLabel);
             }
             else {
                 ;
             }
-            if (TransferOutBox.Visible) {
+            if (ProgressBarsOutPanel.Visible) {
                 CreateLineBelow(TransfersOutLabel);
             }
             else {

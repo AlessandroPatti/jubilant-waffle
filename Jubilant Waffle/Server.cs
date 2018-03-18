@@ -79,6 +79,7 @@ namespace Jubilant_Waffle {
         }
         public Server() {
             InitializeComponent();
+            fsLocker = new object();
             #region UDP Client/Server and Timer setup
             udp = new System.Net.Sockets.UdpClient();
             System.Net.IPAddress ip, mask, broadcast;
@@ -100,6 +101,8 @@ namespace Jubilant_Waffle {
             tcp.Server.ReceiveTimeout = tcp.Server.SendTimeout = timeout; // The timeout set the maxiumum amount of time that the Listener will wait befor throwing and exception
             #endregion
         }
+
+        object fsLocker;
 
         private void Announce(object sender, System.Timers.ElapsedEventArgs e) {
             ///This delegate is called to send the announcement in broadcast at each timer elapse. 
@@ -325,20 +328,27 @@ namespace Jubilant_Waffle {
             }
             fileSize = System.BitConverter.ToInt64(data, 0);
             #endregion
-            #region Receive file
-            data = new byte[4 * 1024 * 1024];
-            if (!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(path))) {
-                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
-            }
-            if (System.IO.File.Exists(path)) {
-                string noEx = path.Substring(0, path.LastIndexOf("."));
-                int i = 1;
-                string ex = path.Substring(path.LastIndexOf("."));
-                while (System.IO.File.Exists(path)) {
-                    path = noEx + "(" + i.ToString() + ")" + ex;
-                    i++;
+            #region Handle filename conflicts
+            lock (fsLocker) {
+                if (!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(path))) {
+                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+                }
+                if (System.IO.File.Exists(path)) {
+                    string noEx = path.Substring(0, path.LastIndexOf("."));
+                    int i = 1;
+                    string ex = path.Substring(path.LastIndexOf("."));
+                    while (System.IO.File.Exists(path)) {
+                        path = noEx + "(" + i.ToString() + ")" + ex;
+                        i++;
+                    }
                 }
             }
+            #endregion
+            #region Setup ProgressBar
+            //TODO
+            #endregion
+            #region Receive file
+            data = new byte[4 * 1024 * 1024];
             fs = new System.IO.FileStream(path, System.IO.FileMode.Create);
             while (alreadyReceived < fileSize && !_cancelCurrent) {
                 try {

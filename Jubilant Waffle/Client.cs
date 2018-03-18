@@ -83,6 +83,7 @@ namespace Jubilant_Waffle {
                         UserListView.Items[i - 1].ImageKey = u.ip;
                     }
                 }
+                CenterToScreen();
                 this.Show();
                 this.ShowInTaskbar = true;
             }
@@ -156,7 +157,6 @@ namespace Jubilant_Waffle {
                 #region Enqueue files
 
                 if (count > 0) {
-                    Program.mainbox.AddProgressBarOut(path + msg);
                     lock (files) {
                         foreach (FileToSend file in tmp) {
                             files.AddLast(file);
@@ -255,10 +255,7 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Set Progress Bar
-            pbar = Program.mainbox.ProgressBarsOut[path + IPEndPoint.Address.ToString()];
-            pbar.Maximum = (int)(fileSize / (1024 * 1024));
-            pbar.Minimum = 0;
-            pbar.Step = pbar.Maximum / 4;
+            pbar = Program.mainbox.AddProgressBarOut(path, 0, (int)Math.Ceiling((double)fileSize / (1024 * 1024)), 4);
             #endregion;
             #region Send file
             /* Open the file */

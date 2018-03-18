@@ -30,9 +30,9 @@
             this.TransfersOutLabel = new System.Windows.Forms.Label();
             this.SettingsIcon = new System.Windows.Forms.PictureBox();
             this.IconToolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.TransferInBox = new System.Windows.Forms.ListBox();
-            this.TransferOutBox = new System.Windows.Forms.ListBox();
             this.DefaultFolderIcon = new System.Windows.Forms.PictureBox();
+            this.ProgressBarsOutPanel = new System.Windows.Forms.FlowLayoutPanel();
+            this.ProgressBarsInPanel = new System.Windows.Forms.FlowLayoutPanel();
             ((System.ComponentModel.ISupportInitialize)(this.StatusIcon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.AutoSaveIcon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SettingsIcon)).BeginInit();
@@ -43,7 +43,7 @@
             // 
             this.StatusIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.StatusIcon.BackColor = System.Drawing.Color.White;
-            this.StatusIcon.ImageLocation = @"icons\status_off.png";
+            this.StatusIcon.ImageLocation = "icons\\status_off.png";
             this.StatusIcon.Location = new System.Drawing.Point(315, 0);
             this.StatusIcon.Name = "StatusIcon";
             this.StatusIcon.Size = new System.Drawing.Size(35, 35);
@@ -56,7 +56,7 @@
             // 
             this.AutoSaveIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.AutoSaveIcon.BackColor = System.Drawing.Color.White;
-            this.AutoSaveIcon.ImageLocation = @"icons\autosave_off.png";
+            this.AutoSaveIcon.ImageLocation = "icons\\autosave_off.png";
             this.AutoSaveIcon.Location = new System.Drawing.Point(245, 0);
             this.AutoSaveIcon.Name = "AutoSaveIcon";
             this.AutoSaveIcon.Size = new System.Drawing.Size(35, 35);
@@ -95,7 +95,7 @@
             this.SettingsIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.SettingsIcon.BackColor = System.Drawing.Color.White;
             this.SettingsIcon.ErrorImage = null;
-            this.SettingsIcon.ImageLocation = @"icons\settings.png";
+            this.SettingsIcon.ImageLocation = "icons\\settings.png";
             this.SettingsIcon.Location = new System.Drawing.Point(350, 0);
             this.SettingsIcon.Name = "SettingsIcon";
             this.SettingsIcon.Size = new System.Drawing.Size(35, 35);
@@ -105,33 +105,11 @@
             this.IconToolTip.SetToolTip(this.SettingsIcon, "Access application settings");
             this.SettingsIcon.Click += new System.EventHandler(this.ChangeSettings);
             // 
-            // TransferInBox
-            // 
-            this.TransferInBox.BackColor = System.Drawing.SystemColors.Window;
-            this.TransferInBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.TransferInBox.FormattingEnabled = true;
-            this.TransferInBox.Location = new System.Drawing.Point(11, 45);
-            this.TransferInBox.Name = "TransferInBox";
-            this.TransferInBox.Size = new System.Drawing.Size(361, 299);
-            this.TransferInBox.TabIndex = 6;
-            this.TransferInBox.Visible = false;
-            // 
-            // TransferOutBox
-            // 
-            this.TransferOutBox.BackColor = System.Drawing.SystemColors.Window;
-            this.TransferOutBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.TransferOutBox.FormattingEnabled = true;
-            this.TransferOutBox.Location = new System.Drawing.Point(11, 46);
-            this.TransferOutBox.Name = "TransferOutBox";
-            this.TransferOutBox.Size = new System.Drawing.Size(361, 299);
-            this.TransferOutBox.TabIndex = 7;
-            this.TransferOutBox.Visible = false;
-            // 
             // DefaultFolderIcon
             // 
             this.DefaultFolderIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.DefaultFolderIcon.BackColor = System.Drawing.Color.White;
-            this.DefaultFolderIcon.ImageLocation = @"icons\folder_default_off.png";
+            this.DefaultFolderIcon.ImageLocation = "icons\\folder_default_off.png";
             this.DefaultFolderIcon.Location = new System.Drawing.Point(280, 0);
             this.DefaultFolderIcon.Name = "DefaultFolderIcon";
             this.DefaultFolderIcon.Size = new System.Drawing.Size(35, 35);
@@ -140,6 +118,20 @@
             this.DefaultFolderIcon.TabStop = false;
             this.IconToolTip.SetToolTip(this.DefaultFolderIcon, "Enable default folder");
             // 
+            // ProgressBarsOutPanel
+            // 
+            this.ProgressBarsOutPanel.Location = new System.Drawing.Point(11, 45);
+            this.ProgressBarsOutPanel.Name = "ProgressBarsOutPanel";
+            this.ProgressBarsOutPanel.Size = new System.Drawing.Size(361, 304);
+            this.ProgressBarsOutPanel.TabIndex = 9;
+            // 
+            // ProgressBarsInPanel
+            // 
+            this.ProgressBarsInPanel.Location = new System.Drawing.Point(11, 45);
+            this.ProgressBarsInPanel.Name = "ProgressBarsInPanel";
+            this.ProgressBarsInPanel.Size = new System.Drawing.Size(361, 304);
+            this.ProgressBarsInPanel.TabIndex = 10;
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -147,9 +139,9 @@
             this.BackColor = System.Drawing.SystemColors.Window;
             this.ClientSize = new System.Drawing.Size(384, 361);
             this.ControlBox = false;
+            this.Controls.Add(this.ProgressBarsInPanel);
+            this.Controls.Add(this.ProgressBarsOutPanel);
             this.Controls.Add(this.DefaultFolderIcon);
-            this.Controls.Add(this.TransferOutBox);
-            this.Controls.Add(this.TransferInBox);
             this.Controls.Add(this.SettingsIcon);
             this.Controls.Add(this.TransfersOutLabel);
             this.Controls.Add(this.TransfersInLabel);
@@ -182,8 +174,8 @@
         private System.Windows.Forms.Label TransfersOutLabel;
         private System.Windows.Forms.PictureBox SettingsIcon;
         private System.Windows.Forms.ToolTip IconToolTip;
-        private System.Windows.Forms.ListBox TransferInBox;
-        private System.Windows.Forms.ListBox TransferOutBox;
         private System.Windows.Forms.PictureBox DefaultFolderIcon;
+        private System.Windows.Forms.FlowLayoutPanel ProgressBarsOutPanel;
+        private System.Windows.Forms.FlowLayoutPanel ProgressBarsInPanel;
     }
 }
