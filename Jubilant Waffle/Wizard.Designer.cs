@@ -39,13 +39,14 @@
             this.Cancel = new System.Windows.Forms.Button();
             this.FolderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
             this.FileDialog = new System.Windows.Forms.OpenFileDialog();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             ((System.ComponentModel.ISupportInitialize)(this.UserPicBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CameraPicBox)).BeginInit();
             this.SuspendLayout();
             // 
             // UserPicBox
             // 
-            this.UserPicBox.ImageLocation = @"icons\default-user-image.png";
+            this.UserPicBox.ImageLocation = "icons\\default-user-image.png";
             this.UserPicBox.Location = new System.Drawing.Point(25, 25);
             this.UserPicBox.Name = "UserPicBox";
             this.UserPicBox.Size = new System.Drawing.Size(150, 150);
@@ -107,7 +108,7 @@
             // CameraPicBox
             // 
             this.CameraPicBox.BackColor = System.Drawing.Color.Transparent;
-            this.CameraPicBox.ImageLocation = @"icons\edit.png";
+            this.CameraPicBox.ImageLocation = "icons\\edit.png";
             this.CameraPicBox.Location = new System.Drawing.Point(25, 145);
             this.CameraPicBox.Name = "CameraPicBox";
             this.CameraPicBox.Size = new System.Drawing.Size(30, 30);
@@ -233,5 +234,6 @@
         private System.Windows.Forms.Button Cancel;
         private System.Windows.Forms.FolderBrowserDialog FolderBrowserDialog;
         private System.Windows.Forms.OpenFileDialog FileDialog;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }

@@ -11,6 +11,9 @@ using System.Windows.Forms;
 namespace Jubilant_Waffle {
     public partial class Main : Form {
         private Graphics graphics;
+        public enum Direction{
+            In, Out
+        }
         public Main() {
             InitializeComponent();
             #region Place box at bottom right
@@ -58,33 +61,76 @@ namespace Jubilant_Waffle {
             #endregion
         }
 
-        delegate ProgressBar AddProgressBarCallback(string name, int min, int max, int step);
-        public ProgressBar AddProgressBarIn(string name, int min, int max, int step) {
-            if (this.InvokeRequired) {
-                AddProgressBarCallback callback = new AddProgressBarCallback(AddProgressBarIn);
-                return (ProgressBar)Invoke(callback, name, min, max, step);
-            }
-            else {
-                ProgressBar pbar = new ProgressBar();
-                throw new NotImplementedException();
-                return pbar;
-            }
-        }
-        public ProgressBar AddProgressBarOut(string name, int min, int max, int step) {
+        delegate Control[] AddProgressBarCallback(string name, Direction dir, int min, int max, int step);
+        delegate void SetProgressCallBack(Control[] progress, int min, int max, int step);
+        delegate void PerformStepCallback(Control[] controls);
+
+        public Control[] AddProgressBarOut(string name, Direction dir, int min = 0, int max = 0, int step = 0) {
             if (this.InvokeRequired) {
                 AddProgressBarCallback callback = new AddProgressBarCallback(AddProgressBarOut);
-                return (ProgressBar)Invoke(callback, name, min, max, step);
+                return (Control[])Invoke(callback, name, dir, min, max, step);
             }
             else {
+                Control[] controls = new Control[3];
+                Label label = new Label();
+                label.Text = name;
+                label.Size = new Size(ProgressBarsOutPanel.Width, 15);
+                controls[0] = label;
+
                 ProgressBar pbar = new ProgressBar();
                 pbar.Show();
-                pbar.Size = new Size(ProgressBarsOutPanel.Size.Width, 20);
+                pbar.Size = new Size(ProgressBarsOutPanel.Size.Width - 32, 20);
                 pbar.Minimum = min;
                 pbar.Maximum = max;
                 pbar.Step = Math.Min(pbar.Maximum, step);
-                ProgressBarsOutPanel.Controls.Add(pbar);
-                return pbar;
+                controls[1] = pbar;
+
+                Button button = new Button();
+                button.Size = new Size(20, 20);
+                button.FlatAppearance.BorderSize = 0;
+                button.FlatStyle = FlatStyle.Flat;
+                button.BackgroundImage = Image.FromFile(@"icons\cancel.png");
+                button.Text = "";
+                button.Click += ProgressBarButtonClick;
+                controls[2] = button;
+
+                FlowLayoutPanel panel = dir == Direction.In ? ProgressBarsInPanel : ProgressBarsOutPanel;
+                panel.Controls.AddRange(controls);
+                return controls;
             }
+        }
+        public void SetProgressBar(Control[] controls, int min, int max, int step) {
+            ProgressBar pbar = (ProgressBar)controls[1];
+            if (pbar.InvokeRequired) {
+                SetProgressCallBack callback = new SetProgressCallBack(SetProgressBar);
+                pbar.Invoke(callback, (object)controls, min, max, step);
+            }
+            else {
+                pbar.Size = new Size(ProgressBarsOutPanel.Size.Width - 32, 20);
+                pbar.Minimum = min;
+                pbar.Maximum = max;
+                pbar.Step = Math.Min(pbar.Maximum, step);
+            }
+        }
+        public void UpdateProgress(Control[] controls) {
+            ProgressBar pbar = (ProgressBar)controls[1];
+            if (pbar.InvokeRequired) {
+                PerformStepCallback callback = new PerformStepCallback(UpdateProgress);
+                pbar.Invoke(callback, (object)controls);
+            }
+            else {
+                pbar.PerformStep();
+                if (pbar.Value == pbar.Maximum)
+                    controls[2].BackgroundImage = Image.FromFile(@"icons\done.png");
+            }
+        }
+        private void ProgressBarButtonClick(object sender, EventArgs e) {
+            FlowLayoutPanel panel = (FlowLayoutPanel)((Control)sender).Parent;
+            int i = panel.Controls.IndexOf((Button)sender);
+            panel.Controls.RemoveAt(i);
+            panel.Controls.RemoveAt(i - 1);
+            panel.Controls.RemoveAt(i - 2);
+            
         }
 
         private void ToggleStatus(object sender, MouseEventArgs e) {

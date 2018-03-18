@@ -12,6 +12,8 @@ namespace Jubilant_Waffle {
     public struct FileToSend {
         public string path;
         public string ip;
+        public Control[] controls;
+        public bool cancel;
     }
     public partial class Client : Form {
         /* Map of the users known. It indexed by IP address since each connection brings the IP */
@@ -144,18 +146,21 @@ namespace Jubilant_Waffle {
                 #endregion
                 #region Read Users
                 List<FileToSend> tmp = new List<FileToSend>();
+                FileToSend fts;
                 for (var i = 0; i < count; i++) {
                     npss.Read(len, 0, len.Length);
                     lenght = System.BitConverter.ToInt32(len, 0);
                     data = new byte[lenght];
                     npss.Read(data, 0, data.Length);
                     msg = System.Text.Encoding.ASCII.GetString(data);
-                    tmp.Add(new FileToSend { path = path, ip = msg });
+                    fts = new FileToSend { path = path, ip = msg };
+                    fts.controls = Program.mainbox.AddProgressBarOut(fts.path, Main.Direction.In);
+                    tmp.Add(fts);
+                    
                 }
                 npss.Close();
                 #endregion
                 #region Enqueue files
-
                 if (count > 0) {
                     lock (files) {
                         foreach (FileToSend file in tmp) {
@@ -179,21 +184,11 @@ namespace Jubilant_Waffle {
                     fts = files.First.Value;
                     files.RemoveFirst();
                 }
-                SendFile(fts.path, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), port));
+                SendFile(fts, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), port));
             }
         }
 
-        delegate void PerformStepDelegate(ProgressBar progress);
-        void PerformStep(ProgressBar pbar) {
-            if (pbar.InvokeRequired) {
-                PerformStepDelegate callback = new PerformStepDelegate(PerformStep);
-                pbar.Invoke(callback, pbar);
-            }
-            else {
-                pbar.PerformStep();
-            }
-        }
-        private void SendFile(string path, System.Net.IPEndPoint IPEndPoint) {
+        private void SendFile(FileToSend fts, System.Net.IPEndPoint IPEndPoint) {
             /// The file is sent using the following sintax
             ///     - Control message 'FILE!'
             ///     - File name lenght on 4 bytes
@@ -209,6 +204,7 @@ namespace Jubilant_Waffle {
             int nameLenght;
             long fileSize; // The size of the file to be sent
             long dataSent = 0; // The amount of data already sent
+            Control[] controls;
             ProgressBar pbar;
             #endregion
             #region Open connection
@@ -225,7 +221,7 @@ namespace Jubilant_Waffle {
             #endregion
             //TODO eventually add a connection for control channel
             #region Send file name lenght
-            nameLenght = System.IO.Path.GetFileName(path).Length;
+            nameLenght = System.IO.Path.GetFileName(fts.path).Length;
             data = System.BitConverter.GetBytes(nameLenght);
             try {
                 dataChannel.GetStream().Write(data, 0, data.Length);
@@ -237,7 +233,7 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Send file name
-            data = System.Text.Encoding.ASCII.GetBytes(System.IO.Path.GetFileName(path));
+            data = System.Text.Encoding.ASCII.GetBytes(System.IO.Path.GetFileName(fts.path));
             try {
                 dataChannel.GetStream().Write(data, 0, data.Length);
             }
@@ -254,7 +250,7 @@ namespace Jubilant_Waffle {
             //TODO zip the file
             #endregion
             #region Send file length
-            fileSize = (new System.IO.FileInfo(path)).Length;//TODO update with size of archive when compression is implemented
+            fileSize = (new System.IO.FileInfo(fts.path)).Length;//TODO update with size of archive when compression is implemented
             data = System.BitConverter.GetBytes(fileSize);
             try {
                 dataChannel.GetStream().Write(data, 0, data.Length);
@@ -266,12 +262,12 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Set Progress Bar
-            pbar = Program.mainbox.AddProgressBarOut(path, 0, (int)Math.Ceiling((double)fileSize / (1024 * 1024)), 4);
+            Program.mainbox.SetProgressBar(fts.controls, 0, (int)Math.Ceiling((double)fileSize / (1024 * 1024)), 4);
             #endregion;
             #region Send file
             /* Open the file */
             try {
-                fs = System.IO.File.OpenRead(path);
+                fs = System.IO.File.OpenRead(fts.path);
             }
             catch (System.IO.FileNotFoundException) {
                 /* Could not find the file. File will not be sent */
@@ -294,7 +290,7 @@ namespace Jubilant_Waffle {
                 dataChannel.GetStream().Write(data, 0, sizeOfLastRead);
                 dataSent += sizeOfLastRead;
                 System.Diagnostics.Debug.WriteLine("Sent " + dataSent.ToString() + "B out of " + fileSize.ToString() + "B");
-                PerformStep(pbar);
+                Program.mainbox.UpdateProgress(fts.controls);
             }
             /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
             _cancelCurrent = false;
