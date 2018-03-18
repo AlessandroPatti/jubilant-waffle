@@ -281,8 +281,7 @@ namespace Jubilant_Waffle {
                 System.Diagnostics.Debug.WriteLine("Sent " + dataSent.ToString() + "B out of " + fts.fileSize.ToString() + "B");
                 fts.UpdateProgress();
             }
-            /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
-            _cancelCurrent = false;
+            dataChannel.Close();
             #endregion
         }
 

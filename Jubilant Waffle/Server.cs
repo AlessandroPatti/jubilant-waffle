@@ -345,7 +345,8 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Setup ProgressBar
-            //TODO
+            FileToSend fts = new FileToSend(path, "", 4, fileSize);
+            fts.AddToPanel(Program.mainbox.ProgressBarsInPanel);
             #endregion
             #region Receive file
             data = new byte[4 * 1024 * 1024];
@@ -356,12 +357,18 @@ namespace Jubilant_Waffle {
                 }
                 catch (System.Net.Sockets.SocketException) {
                     /* Could not connect to the host, something went wrong. Request aborted */
-                    System.Console.Write("Impossible receiving file, failed reading file size");
+                    System.Console.Write("Impossible receiving file, failed reading file form socket");
+                    return;
+                }
+                if (sizeOfLastRead == 0) {
+                    /* Could not connect to the host, something went wrong. Request aborted */
+                    System.Console.Write("Impossible receiving file, user canceled or disconnected?");
                     return;
                 }
                 alreadyReceived += sizeOfLastRead;
                 System.Diagnostics.Debug.WriteLine("Sent " + alreadyReceived.ToString() + "B out of " + fileSize.ToString() + "B");
                 fs.Write(data, 0, sizeOfLastRead);
+                fts.UpdateProgress();
             }
             /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
             _cancelCurrent = false;

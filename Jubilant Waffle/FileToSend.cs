@@ -23,11 +23,11 @@ namespace Jubilant_Waffle {
             this.fileSize = fileSize != 0 ? fileSize : (new System.IO.FileInfo(path)).Length;
             label = new Label();
             label.Text = System.IO.Path.GetFileName(path);
-
+            
 
             pbar = new ProgressBar();
             pbar.Minimum = 0;
-            pbar.Maximum = (int)Math.Ceiling((double)fileSize / (1024 * 1024));
+            pbar.Maximum = (int)Math.Ceiling((double)this.fileSize / (1024 * 1024));
             pbar.Step = Math.Max(1, Math.Min(PBarStep, pbar.Maximum));
 
             button = new Button();
@@ -71,6 +71,7 @@ namespace Jubilant_Waffle {
             }
         }
         private void ProgressBarButtonClick(object sender, EventArgs e) {
+            cancel = true;
             FlowLayoutPanel panel = (FlowLayoutPanel)((Control)sender).Parent;
             int i = panel.Controls.IndexOf((Button)sender);
             panel.Controls.RemoveAt(i);
