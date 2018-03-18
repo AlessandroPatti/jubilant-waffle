@@ -20,6 +20,8 @@ namespace Jubilant_Waffle {
         System.Net.Sockets.TcpListener tcp;
         #endregion
 
+        DialogResult res;
+
         private string _defaultPath = "";
         private bool _useDefault = true;
         private bool _autoSave = true;
@@ -295,7 +297,11 @@ namespace Jubilant_Waffle {
                 }
             }
             if (!UseDefault) {
-                DialogResult res = FolderSelectionDialog.ShowDialog();
+                /* Dialog requires STA thread, but this thread is STA. */
+                System.Threading.Thread t = new System.Threading.Thread(() => res = FolderSelectionDialog.ShowDialog());
+                t.SetApartmentState(System.Threading.ApartmentState.STA);
+                t.Start();
+                t.Join();
                 if (res == DialogResult.OK) {
                     path = FolderSelectionDialog.SelectedPath + @"\" + filename;
                 }
@@ -321,7 +327,18 @@ namespace Jubilant_Waffle {
             #endregion
             #region Receive file
             data = new byte[4 * 1024 * 1024];
-            //TODO existing file will be automatically overwritten. Modify this behaviour later
+            if (!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(path))) {
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+            }
+            if (System.IO.File.Exists(path)) {
+                string noEx = path.Substring(0, path.LastIndexOf("."));
+                int i= 1;
+                string ex = path.Substring(path.LastIndexOf("."));
+                while (System.IO.File.Exists(path)) {
+                    path = noEx + "(" + i.ToString() + ")" + ex;
+                    i++;
+                }
+            }
             fs = new System.IO.FileStream(path, System.IO.FileMode.Create);
             while (alreadyReceived < fileSize && !_cancelCurrent) {
                 try {
