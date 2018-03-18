@@ -146,7 +146,7 @@ namespace Jubilant_Waffle {
                     case "Name":
                         self.name = value;
                         break;
-                    case "Surame":
+                    case "Surname":
                         self.surname = value;
                         break;
                 }
