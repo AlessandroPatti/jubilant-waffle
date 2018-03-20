@@ -20,13 +20,6 @@ namespace Jubilant_Waffle {
             udp = new UdpClient(Program.port);
             files = new LinkedList<FileToSend>();
             InitializeComponent();
-            #region Calling show to fire load
-            Size tmp = this.Size;
-            this.Size = new Size(0, 0);
-            this.Show();
-            this.Hide();
-            this.Size = tmp;
-            #endregion
             #region Execute routines
             System.Threading.Thread ConsumeFileListThread = new System.Threading.Thread(() => ConsumeFileList());
             System.Threading.Thread ListenForConnectionsThread = new System.Threading.Thread(() => ListenForConnections());
@@ -88,12 +81,16 @@ namespace Jubilant_Waffle {
                     }
                     #endregion
                 }
-                CenterToScreen();
-                Show();
-                ShowInTaskbar = true;
             }
+            /* The confirm button has to be enabled only if at least one item is selected */
+            Confirm.Enabled = false;
         }
-
+        private void EnableDisableConfirmation(object sender, ListViewItemSelectionChangedEventArgs e) {
+            /// <summary>
+            /// The confirm button has to be enabled only if at least one item is selected
+            /// </summary>
+            Confirm.Enabled = UserListView.SelectedItems.Count != 0;
+        }
 
         static public void EnqueueMessage(string msg) {
             /// <summary>
@@ -110,7 +107,6 @@ namespace Jubilant_Waffle {
             client.GetStream().Write(data, 0, data.Length);
             data = Encoding.ASCII.GetBytes(msg);
             client.GetStream().Write(data, 0, data.Length);
-
         }
         private void ReadMS() {
             /// <summary>
@@ -118,16 +114,15 @@ namespace Jubilant_Waffle {
             /// When a new connection occurs, first it reads from the socket the path of the file
             /// then lets the user select to whom the file has to be sent, and finally enqueue the file.
             /// </summary>
-            string msg;
-            string path;
-            byte[] data;
-            byte[] len = new byte[4];
-            int lenght;
-            int count;
-            TcpClient client;
+            string path;                        // The path of the file enqueued
+            byte[] data;                        // Buffer for the socket
+            byte[] len = new byte[4];           // Buffer for the socket
+            int lenght;                         // Support variable that will store the lenght of the path
+            DialogResult res;                   // The result of the dialog in which the user can select users and confirm or cancel the transfer
+            TcpClient client;                   // The client used to communicate with the other instance
+
             instancesListener = new TcpListener(System.Net.IPAddress.Loopback, Program.port + 1);
             instancesListener.Start();
-            NamedPipeServerStream npss;
             while (true) {
                 #region Read message from the socket
                 client = instancesListener.AcceptTcpClient();
@@ -137,48 +132,29 @@ namespace Jubilant_Waffle {
                 client.GetStream().Read(data, 0, data.Length);
                 path = Encoding.ASCII.GetString(data);
                 client.Close();
-
+                #endregion
                 /* The path send using the right-click on the file sometimes is shortened
                  * automatically by windows. Altought the path is still valid, the name of the file,
                  * which as to be sent to the remote host, might be modified (e.g. example_file.txt -> EXA~1.txt)
-                 * The two followng lines aim at fixing the problem by retriving the full path from the FS.
+                 * The followng line aims at fixing the problem by retriving the full path from the FS.
                  */
-                FileInfo fi = new FileInfo(path);
-                path = fi.FullName;
-                #endregion
+                path = (new FileInfo(path)).FullName;
                 #region Ask user
-                npss = new NamedPipeServerStream("JubilantWaffleInternal");
                 UpdateList();
-                npss.WaitForConnection();
-                /* Read response 
-                 *
-                 * It is sent as
-                 *      - Count: number of users selected
-                 *      - length 1st ip address
-                 *      - 1st ip address
-                 *      - ...
-                 */
-
-                npss.Read(len, 0, len.Length);
-                count = BitConverter.ToInt32(len, 0);
+                res = ShowDialog();
                 #endregion
-                #region Read Users
-                List<FileToSend> tmp = new List<FileToSend>();
-                FileToSend fts;
-                for (var i = 0; i < count; i++) {
-                    npss.Read(len, 0, len.Length);
-                    lenght = BitConverter.ToInt32(len, 0);
-                    data = new byte[lenght];
-                    npss.Read(data, 0, data.Length);
-                    msg = Encoding.ASCII.GetString(data);
-                    fts = new FileToSend(path, msg, Program.bufferSize / 1024 / 1024);
-                    fts.AddToPanel(Program.mainbox.ProgressBarsOutPanel);
-                    tmp.Add(fts);
-                }
-                npss.Close();
-                #endregion
-                #region Enqueue files
-                if (count > 0) {
+                #region Eventually enqueue file/users
+                if (res == DialogResult.OK) {
+                    /* File-user pair are first stored in a temporary list while the object are created and then
+                     * pushed all the list togheter to avoid multiple pulse on the Monitor
+                     */
+                    List<FileToSend> tmp = new List<FileToSend>();
+                    FileToSend fts;
+                    foreach (ListViewItem item in UserListView.SelectedItems) {
+                        fts = new FileToSend(path, item.ImageKey, Program.bufferSize / 1024 / 1024);
+                        fts.AddToPanel(Program.mainbox.ProgressBarsOutPanel);
+                        tmp.Add(fts);
+                    }
                     lock (files) {
                         foreach (FileToSend file in tmp) {
                             files.AddLast(file);
@@ -412,46 +388,6 @@ namespace Jubilant_Waffle {
                 Program.users.Add(userAddress.ToString(), new User(name, userAddress.ToString(), imagepath));
             }
             #endregion
-        }
-
-        private void ConfirmSend(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                byte[] data;
-                System.IO.Pipes.NamedPipeClientStream npcs = new System.IO.Pipes.NamedPipeClientStream("JubilantWaffleInternal");
-                npcs.Connect();
-                data = BitConverter.GetBytes(UserListView.SelectedItems.Count);
-                npcs.Write(data, 0, data.Length);
-                foreach (ListViewItem item in UserListView.SelectedItems) {
-                    data = BitConverter.GetBytes(item.ImageKey.Length);
-                    npcs.Write(data, 0, data.Length);
-                    data = Encoding.ASCII.GetBytes(item.ImageKey);
-                    npcs.Write(data, 0, data.Length);
-                }
-                npcs.WaitForPipeDrain();
-                npcs.Close();
-                this.Hide();
-                this.ShowInTaskbar = false;
-            }
-        }
-        private void UndoSend(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                byte[] data;
-                System.IO.Pipes.NamedPipeClientStream npcs = new System.IO.Pipes.NamedPipeClientStream("JubilantWaffleInternal");
-                npcs.Connect();
-                data = BitConverter.GetBytes(0);
-                npcs.Write(data, 0, data.Length);
-                npcs.WaitForPipeDrain();
-                npcs.Close();
-                this.Hide();
-                this.ShowInTaskbar = false;
-            }
-        }
-
-        private void PreventClose(object sender, FormClosingEventArgs e) {
-            ///<summary>
-            /// Added to the FormClosing event, will prevent the form to be closed in any way.
-            ///</summary>
-            e.Cancel = true;
         }
 
     }

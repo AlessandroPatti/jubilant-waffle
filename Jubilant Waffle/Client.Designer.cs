@@ -37,27 +37,28 @@
             this.UserListView.Size = new System.Drawing.Size(760, 494);
             this.UserListView.TabIndex = 0;
             this.UserListView.UseCompatibleStateImageBehavior = false;
+            this.UserListView.ItemSelectionChanged += new System.Windows.Forms.ListViewItemSelectionChangedEventHandler(this.EnableDisableConfirmation);
             // 
             // Confirm
             // 
-            this.Confirm.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.Confirm.DialogResult = System.Windows.Forms.DialogResult.OK;
+            this.Confirm.Enabled = false;
             this.Confirm.Location = new System.Drawing.Point(640, 512);
             this.Confirm.Name = "Confirm";
             this.Confirm.Size = new System.Drawing.Size(121, 37);
             this.Confirm.TabIndex = 1;
             this.Confirm.Text = "Confirm";
             this.Confirm.UseVisualStyleBackColor = true;
-            this.Confirm.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ConfirmSend);
             // 
             // Cancel
             // 
+            this.Cancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.Cancel.Location = new System.Drawing.Point(501, 512);
             this.Cancel.Name = "Cancel";
             this.Cancel.Size = new System.Drawing.Size(121, 37);
             this.Cancel.TabIndex = 2;
             this.Cancel.Text = "Cancel";
             this.Cancel.UseVisualStyleBackColor = true;
-            this.Cancel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.UndoSend);
             // 
             // Client
             // 
@@ -71,12 +72,11 @@
             this.Controls.Add(this.Cancel);
             this.Controls.Add(this.Confirm);
             this.Controls.Add(this.UserListView);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Client";
-            this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Share With...";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.PreventClose);
             this.ResumeLayout(false);
 
         }
