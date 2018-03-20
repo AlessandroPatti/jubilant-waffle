@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Jubilant_Waffle {
@@ -12,53 +12,89 @@ namespace Jubilant_Waffle {
         /// The main entry point for the application.
         /// </summary>
 
-        static public User self; // Represent the user running the application
-        static public Server server;
-        static public Client client;
-        static public Main mainbox;
-        static public System.Collections.Generic.Dictionary<String, User> users;
+        public static User self;                                    // Represent the user running the application
+        public static Server server;                                // The server part of te application. It announces itself and waits for new connection from the client
+        public static Client client;                                // The client part of the application. It collects announcements from other servers and sends files to them on user request.
+        public static Main mainbox;                                 // The main box showed at the bottom right of the screen. It gives access to the option other then a view on pending and completed transfers.
+        public static Wizard wizard;                                // Used to change main options of the application. It is automatically called at first launch of the application-
+        public static Dictionary<String, User> users;               // The list of users that are online. Its collected by the client. The key will be the IP address, which has to be unique.
 
-        const string iconFile = "waffle_icon_3x_multiple.ico";
-        static System.Windows.Forms.NotifyIcon trayIcon;
+        static NotifyIcon trayIcon;
 
-        public static Wizard w;
-        public static Boolean wizardRes = true;
-        public static System.Threading.Mutex mutex = null;
-        public static string AppDataFolder;
+        
+        public static Mutex mutex = null;                           // Used to make the apllication single-instance.
 
+        #region Program constant used by all modules
+        public const string iconFile = "waffle_icon_3x_multiple.ico";              // The icon of the application
+        public const string defaultImagePath = @"icons\default-user-image.png";    // The image file used when the connected user has not set any user pic.
+        public const int port = 20000;                                             // The port used by the udp socket to listen for other user connection. The port "port+1" is used by the internal tcp socket instead.
+        public const int timeout = 200000;                                         // The timeout used by the sockets on blocking opration. Determine the maximum ammount of time of wait.
+        public const int bufferSize = 4 * 1024 * 1024;                             // The size of the buffer used to send file.
+        public static string AppDataFolder;                                         // It will contains the path where data (user pic, settings file) will be stored. Typically %userdir%/AppData/Roaming/Jubilant Waffle
+
+        /* The follong constants define the protocol used */
+        public const byte FILE = 0;                                 // Used to request a new file transfer
+        public const byte DIRECTORY = 1;                            // Used to request a new directory transfer
+        public const byte HELLO = 2;                                // Used by the server to announce itself online
+        public const byte BYE = 3;                                  // Used by the server when it switches to offline status
+        public const byte INFORMATION_REQUEST = 4;                  // Used by the client when a new unknown user connects to ask for the name and eventually a pic
+        public const byte INFO_WITH_IMAGE = 5;                      // Reply to a INFORMATION_REQUEST informing that also an image will be sent
+        public const byte INFO_WITHOUT_IMAGE = 6;                   // Reply to a INFORMATION_REQUEST informing that also an image will be sent
+        public const byte TRANSFER_OK = 7;                          // Positively reply to a transfer request
+        public const byte TRANSFER_DENY = 8;                        // Negatively reply to a transfer request
+        #endregion
         [STAThread]
         static void Main(string[] argv) {
-            #region
-            //If the following line is enable ImageList is not going to be populated
-            //Application.EnableVisualStyles();
+
             Application.SetCompatibleTextRenderingDefault(false);
-            #endregion
-            #region Make the application single instance
-            // code at http://www.c-sharpcorner.com/UploadFile/f9f215/how-to-restrict-the-application-to-just-one-instance/
+
+            #region Make the application single instance and communitate with the main one
+            /* 
+             * We want the application to have only one instance. When another instance is opened 
+             * it maight be one of the followng case:
+             *      - The user tries to execute another instance by doubleclick: the application is immediately shutdown.
+             *      - The user tries to send a file by right clicking on: this will launch a new instance that has to 
+             *              communicate with the first one and send the path of the file.
+             */
+
             bool createdNew;
-            const string appName = "Jubilant Waffle";
-            mutex = new System.Threading.Mutex(true, appName, out createdNew);
+
+            mutex = new System.Threading.Mutex(true, "Jubilant Waffle", out createdNew);        // Tries to instanciate a named mutex and acquire the onwneship. Created new will be true if ownership has been granted
             if (!createdNew) {
                 if (argv.Length > 0) {
-                    string path = System.String.Join(" ", argv);
-                    Client.EnqueueMessage(path);
+                    /* Im assuming that if the application has be launched
+                     * with at least a paramenter, it's the right click case. 
+                     */
+                    string path = System.String.Join(" ", argv);                                // If the path of the right-clicked file contains spaces, the application will read then as several argments. 
+                    if (File.Exists(path))                                                       // Just to be sure that it was a proper right-click launch.
+                        Client.EnqueueMessage(path);                                            // Enstablish the communication with the main instance.
                 }
                 return;
             }
             #endregion
             #region Setup application
-            //TODO Name should be taken from a config file
-            users = new System.Collections.Generic.Dictionary<string, User>();
-            self = new User("", GetMyIP(), @"icons\default-user-image.png");
+            AppDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Jubilant Waffle";
+            users = new Dictionary<String, User>();
+            self = new User("", GetMyIP());
             server = new Server();
             client = new Client();
-            AppDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Jubilant Waffle";
-            if (!System.IO.File.Exists(AppDataFolder + @"\settings.ini")) {
+            mainbox = new Main();
+            #endregion
+            #region Read settings or execute wizard
+            if (!File.Exists(AppDataFolder + @"\settings.ini")) {
+                /* The settings file is store each time the applicatation is closed.
+                 * If the settings files is not present, I'm assiming that it's the first launch
+                 * and thus the wizard is called for the first setup
+                 */
                 server.DefaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Jubilant Waffle";
-                w = new Wizard();
-                w.Show();
-                Application.Run(w);
-                if (!wizardRes)
+                wizard = new Wizard();
+                
+                /* The application will hang untill the wizard is over.
+                 * The wizard can terminate with confirm or cancel. Only in the first case the application will continue the execution
+                 * and settings file will be store to avoid displaying the setup again at startup.
+                 */
+                DialogResult res=wizard.ShowDialog();
+                if (res == DialogResult.Cancel)
                     Environment.Exit(0);
                 else
                     WriteSettingsFile();
@@ -67,14 +103,11 @@ namespace Jubilant_Waffle {
                 ReadSettingsFile();
             }
             #endregion
-            #region main box
-            mainbox = new Main();
-            #endregion
             #region Tray Icon
             trayIcon = new NotifyIcon();
             trayIcon.Visible = true;
 
-            /* Show a tooltip for current status */
+            /* Show a tooltip for current status when mouse is hovering */
             trayIcon.Text = "Jubilant Waffle\nStatus: ";
             trayIcon.Text += server.Status ? "Online" : "Offline";
 
@@ -83,7 +116,8 @@ namespace Jubilant_Waffle {
 
             /* Show notification */
             trayIcon.ShowBalloonTip(500, "Jubilant Waffle", "Jubilant Waffle always runs minimized into tray", ToolTipIcon.None);
-            trayIcon.BalloonTipClicked += (object s, EventArgs e) => mainbox.Show();
+            trayIcon.BalloonTipClicked += (object s, EventArgs e) => mainbox.Show();            // When ballon tips are shown, I want the main box to be shown. Ballon tips will be shown for each new incoming file.
+
             /*
              * Set the mouse right click menu
              */
@@ -91,6 +125,7 @@ namespace Jubilant_Waffle {
             /* Show Exit */
             trayContextMenuItems[0] = new MenuItem("Exit");
             trayContextMenuItems[0].Click += Exit;
+
             /* Show option to switch status. Text of the option change according to current status */
             trayContextMenuItems[1] = new MenuItem();
             trayContextMenuItems[1].Text = (server.Status) ? "Go offline" : "Go online";
@@ -124,7 +159,7 @@ namespace Jubilant_Waffle {
 
         private static void ReadSettingsFile() {
             string param, value;
-            foreach (var line in System.IO.File.ReadLines(AppDataFolder + @"\settings.ini")) {
+            foreach (var line in File.ReadLines(AppDataFolder + @"\settings.ini")) {
                 param = line.Substring(0, line.IndexOf(":"));
                 value = line.Substring(line.IndexOf(":") + 1);
                 switch (param) {
@@ -141,7 +176,7 @@ namespace Jubilant_Waffle {
                         server.Status = value == "True" ? true : false;
                         break;
                     case "Pic":
-                        self.imagePath = value == "Custom" ? AppDataFolder + @"\user.png" : @"icons\default-user-image.png";
+                        self.imagePath = value == "Custom" ? AppDataFolder + @"\user.png" : defaultImagePath;
                         break;
                     case "PublicName":
                         self.publicName = value;
@@ -155,7 +190,6 @@ namespace Jubilant_Waffle {
                 }
             }
         }
-
         private static void WriteSettingsFile() {
             System.IO.StreamWriter sw;
             if (!System.IO.Directory.Exists(AppDataFolder))
@@ -165,12 +199,13 @@ namespace Jubilant_Waffle {
             sw.WriteLine("UseDefault:" + (server.UseDefault ? "True" : "False"));
             sw.WriteLine("DefaultPath:" + server.DefaultPath);
             sw.WriteLine("Status:" + (server.Status ? "True" : "False"));
-            sw.WriteLine("Pic:" + (self.imagePath != null && self.imagePath != @"icons\default-user-image.png" ? "Custom" : "Default"));
+            sw.WriteLine("Pic:" + (self.imagePath != null ? "Custom" : "Default"));
             sw.WriteLine("PublicName:" + self.publicName);
             sw.WriteLine("Name:" + self.name);
             sw.WriteLine("Surname:" + self.surname);
             sw.Close();
         }
+
         private static void ShowMainBox(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 mainbox.Show();
@@ -234,8 +269,12 @@ namespace Jubilant_Waffle {
         }
 
 
-
+        /* The following methods are utilities to gather information abaout the network form the local machine */
         static public string GetMyIP() {
+            /// <summary>
+            /// Get the IP address of the first application with a valid IP address.
+            /// Do not manage the cases where there are several interfaces connected.
+            /// </summary>
             var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
             foreach (var ip in host.AddressList) {
                 if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {

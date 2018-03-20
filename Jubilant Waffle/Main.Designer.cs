@@ -125,6 +125,7 @@
             this.ProgressBarsOutPanel.Name = "ProgressBarsOutPanel";
             this.ProgressBarsOutPanel.Size = new System.Drawing.Size(361, 304);
             this.ProgressBarsOutPanel.TabIndex = 9;
+            this.ProgressBarsOutPanel.Visible = false;
             // 
             // ProgressBarsInPanel
             // 
@@ -133,6 +134,7 @@
             this.ProgressBarsInPanel.Name = "ProgressBarsInPanel";
             this.ProgressBarsInPanel.Size = new System.Drawing.Size(361, 304);
             this.ProgressBarsInPanel.TabIndex = 10;
+            this.ProgressBarsInPanel.Visible = false;
             this.ProgressBarsInPanel.WrapContents = false;
             // 
             // Main
@@ -157,7 +159,6 @@
             this.Text = "Main";
             this.Deactivate += new System.EventHandler(this.HideOnClickOut);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.PreventClose);
-            this.Load += new System.EventHandler(this.LoadIcons);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.OnPaint);
             this.Leave += new System.EventHandler(this.HideOnClickOut);
             ((System.ComponentModel.ISupportInitialize)(this.StatusIcon)).EndInit();

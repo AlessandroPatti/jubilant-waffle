@@ -161,6 +161,7 @@
             // 
             // Confirm
             // 
+            this.Confirm.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.Confirm.Location = new System.Drawing.Point(275, 335);
             this.Confirm.Name = "Confirm";
             this.Confirm.Size = new System.Drawing.Size(90, 30);
@@ -171,6 +172,7 @@
             // 
             // Cancel
             // 
+            this.Cancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.Cancel.Location = new System.Drawing.Point(175, 335);
             this.Cancel.Name = "Cancel";
             this.Cancel.Size = new System.Drawing.Size(90, 30);

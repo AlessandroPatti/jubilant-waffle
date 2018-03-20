@@ -1,125 +1,143 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Jubilant_Waffle {
     public partial class Server : Form {
 
-        #region UDPClient
-        /* The UDP client is only in charge of sending periodically an announcement if the the status is online */
-        System.Net.Sockets.UdpClient udp; //The client
-        System.Timers.Timer announceTimer; //The timer that will execute periodically the announcement
-        #endregion
-        #region TCPSever
-        System.Net.Sockets.TcpListener tcp;
+        #region Sockets and services
+        UdpClient udp;                              // The client used to anounce the server on the net
+        System.Timers.Timer announceTimer;          // The timer that will execute periodically the announcement
+        TcpListener tcp;                            // Tcp server listening for users that want to start a transfer
         #endregion
 
         DialogResult res;
+        private object fsLock, optionLock;
 
+        private const int timer = 2000;              // The frequency with which the server will announce itselft on the net is the status is online
+
+        #region Application Options
         private string _defaultPath = "";
         private bool _useDefault = true;
         private bool _autoSave = true;
-        private bool _cancelCurrent = false; // This is used to undo the current transfer
-        private bool _status = false; //The status true means online.
-
-        const int port = 20000;
-        const int timeout = 200000;
-        const int timer = 2000;
+        private bool _status = false;
 
         public bool UseDefault {
             get {
-                return _useDefault;
+                lock (optionLock) {
+                    return _useDefault;
+                }
             }
             set {
-                _useDefault = value;
+                lock (optionLock) {
+                    _useDefault = value;
+                }
             }
-        }
+        }                   // Used when the user wants to automatically store all the file in a default folder
         public string DefaultPath {
             get {
-                return _defaultPath;
+                lock (optionLock) {
+                    return _defaultPath;
+                }
             }
             set {
-                _defaultPath = value;
+                lock (optionLock) {
+                    _defaultPath = value;
+                }
             }
-        }
+        }                // Define whether the user wants to use the default path or be asked at each transfer
         public bool AutoSave {
             get {
-                return _autoSave;
+                lock (optionLock) {
+                    return _autoSave;
+                }
             }
             set {
-                _autoSave = value;
+                lock (optionLock) {
+                    _autoSave = value;
+                }
             }
-        }
+        }                     // Define whether incoming file transfer will be automatically accepted or not
         public bool Status {
             get {
-                return _status;
+                lock (optionLock) {
+                    return _status;
+                }
             }
             set {
-                /* If the user set true and server is not running, start both services */
-                if (value && !_status) {
-                    tcp.Start();
-                    System.Threading.Thread t = new System.Threading.Thread(() => ServerRoutine());
-                    t.Name = "Server Routine";
-                    t.Start();
-                    announceTimer.Enabled = true;
+                lock (optionLock) {
+                    if (value && !_status) {
+                        /* If the user set true and server is not running, start both services */
+                        tcp.Start();
+                        Thread t = new Thread(() => ServerRoutine());
+#if DEBUG
+                        t.Name = "Server Routine";
+#endif
+                        t.Start();
+                        announceTimer.Enabled = true;
+                    }
+                    if (!value && _status) {
+                        /* If the user set false and server is running, stop both services */
+                        tcp.Stop();
+                        announceTimer.Enabled = false;
+                        byte[] dgram = { Program.BYE };
+                        udp.Send(dgram, dgram.Length);
+                    }
+                    _status = value;
                 }
-                /* If the user set false and server is running, stop both services */
-                if (!value && _status) {
-                    tcp.Stop();
-                    announceTimer.Enabled = false;
-                }
-                _status = value;
             }
-        }
+        }                       // The server will announce itself on the net only if the status is online (i.e. true)
+        #endregion
+
         public Server() {
             InitializeComponent();
-            fsLocker = new object();
+            fsLock = new object();
+            optionLock = new object();
             #region UDP Client/Server and Timer setup
-            udp = new System.Net.Sockets.UdpClient();
-            System.Net.IPAddress ip, mask, broadcast;
-            ip = System.Net.IPAddress.Parse(Program.self.ip);
+            udp = new UdpClient();
+            IPAddress ip, mask, broadcast;
+            ip = IPAddress.Parse(Program.self.ip);
             mask = Program.GetSubnetMask(ip);
             broadcast = Program.GetBroadcastAddress(ip, mask);
-            udp.Connect(broadcast, port); //Set the default IP address. It is the broadcast address of the subnet
-            udp.EnableBroadcast = true;
-            /* 
-             * Setup the timer for the announcement
-             */
+            udp.Connect(broadcast, Program.port);                   // Set the default IP address. It is the broadcast address of the subnet
+            /* Setup the timer for the announcement */
             announceTimer = new System.Timers.Timer();
-            announceTimer.Elapsed += Announce; // The callback that will execute the announcement has to be added to the event Elapsed
-            announceTimer.Interval = timer; // The timeout interval
-            announceTimer.AutoReset = true; // Make the execution repeat several times
+            announceTimer.Elapsed += Announce;
+            announceTimer.Interval = timer;
+            announceTimer.AutoReset = true;                         // Make the execution repeat several times instead of once
             #endregion 
             #region TCP Server setup
-            tcp = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Any, port);
-            tcp.Server.ReceiveTimeout = tcp.Server.SendTimeout = timeout; // The timeout set the maxiumum amount of time that the Listener will wait befor throwing and exception
+            tcp = new TcpListener(IPAddress.Any, Program.port);
+            tcp.Server.ReceiveTimeout = tcp.Server.SendTimeout = Program.timeout;
             #endregion
         }
 
-        object fsLocker;
-
         private void Announce(object sender, System.Timers.ElapsedEventArgs e) {
-            ///This delegate is called to send the announcement in broadcast at each timer elapse. 
-            ///The string sent is "HELLO"
-            byte[] announce = System.Text.Encoding.ASCII.GetBytes("HELLO"); //TODO Eventually replace the string with a constant
-            udp.Send(announce, announce.Length); //TODO Send or Send Async?
+            /// <summary>
+            /// Called by the timer to periodically announce the server
+            ///</summary>
+            byte[] dgram = { Program.HELLO };
+            udp.Send(dgram, dgram.Length);
         }
 
         private void ServerRoutine() {
-            ///Put the server in listen mode. Each new connection is executed into a new separate thread.
-            System.Net.Sockets.TcpClient incomingConnection;
-            while (_status) {
+            /// <summary>
+            /// Listen for new connection and execute a thread for each of them
+            /// </summary>
+
+            TcpClient client;
+            while (Status) {
                 #region Wait for new connections
                 try {
-                    incomingConnection = tcp.AcceptTcpClient();
+                    client = tcp.AcceptTcpClient();
                 }
-                catch (System.Net.Sockets.SocketException) {
+                catch (SocketException) {
                     /* 
                      * SocketException is launched at timeout elased. Nothing as to be done, 
                      * but thanks to the timeout the status condition is periodically checked.
@@ -127,117 +145,102 @@ namespace Jubilant_Waffle {
                     continue;
                 }
                 #endregion
-                #region new incoming connection
-                (new System.Threading.Thread(() => ManageConnection(incomingConnection))).Start();
-                #endregion
+                (new Thread(() => ManageConnection(client))).Start();
             }
         }
-
-        private void ManageConnection(System.Net.Sockets.TcpClient client) {
-            /// Manage new incoming connection. Connection can be of two types
-            ///     - Request for file transfer, control message 'FILE!'
-            ///     - Rest for user info, control message 'WHO??'
-
-            byte[] data = new byte[5];
-            string msg;
+        private void ManageConnection(TcpClient client) {
+            /// <summary>
+            /// Parse the request by reading the control message received (i.e. FILE, DIRECTORY or INFORMATION_REQUEST)
+            /// and execute the correct thread
+            /// </summary>
+            client.Client.ReceiveTimeout = client.Client.SendTimeout = Program.timeout;
+            byte[] msg = new byte[1];
             #region Read request
             try {
-                client.GetStream().Read(data, 0, 5);
+                client.GetStream().Read(msg, 0, msg.Length);
             }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Request aborted */
-                System.Console.Write("Impossible parse request, control message not received");
+            catch (SocketException) {
+                Debug.Write("Impossible parse request, control message not received");
                 return;
             }
-            msg = System.Text.Encoding.ASCII.GetString(data);
             #endregion
             #region Parse request
-            switch (msg) {
-                case "FILE!":
-                    ReceiveFile(client);
-                    break;
-                case "WHO??":
-                    SendPersonalInfo(client);
-                    break;
+            try {
+                switch (msg[0]) {
+                    case Program.FILE:
+                        ReceiveFile(client);
+                        break;
+                    case Program.INFORMATION_REQUEST:
+                        SendPersonalInfo(client);
+                        break;
+                }
+            }
+            catch (SocketException) {
+                //TODO
+                return;
             }
             #endregion
         }
 
-        private void SendPersonalInfo(System.Net.Sockets.TcpClient client) {
-            byte[] data;
-            long imageLenght;
+        private void SendPersonalInfo(TcpClient client) {
+            /// <summary>
+            /// Send user personal information (i.e. public name, user pic) to the remote party
+            /// 
+            /// This method may throw SocketException if the socket timeout expires.
+            /// </summary>
+            byte[] data;                       // Buffer for socket
+            long fileSize;                     // Support variable that will contain the size of the user pic file if it is present
+            FileStream fs = null;
             #region Send response
-            if (Program.self.imagePath != null)
-                data = System.Text.Encoding.ASCII.GetBytes("MARIO");
-            else
-                data = System.Text.Encoding.ASCII.GetBytes("LUIGI");
-            try {
-                client.GetStream().Write(data, 0, data.Length);
+            /* If an image has been set by the user, it will be sent (INFO_WITH_IMAGE) otherwise only the name will be sent (INFO_WITHOUT_IMAGE)
+             * The application will also check that the image file is still present before sending the control message.
+             */
+            if (Program.self.imagePath != null) {
+                /* The user has set an image */
+                try {
+                    /* Instead of just checking the existence of the file, it is opened and kept open until the method finishes.
+                     * This avoids that the file might be somehow deleted during the method execution (the file can't be deleted if in use)
+                     */
+                    fs = File.OpenRead(Program.self.imagePath);
+                    data = new byte[] { Program.INFO_WITH_IMAGE };
+                }
+                catch (FileNotFoundException) {
+                    /* The file is not present, so it will not be sent */
+                    Program.self.imagePath = null;
+                    data = new byte[] { Program.INFO_WITHOUT_IMAGE };
+                }
             }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Request aborted */
-                System.Console.Write("Impossible serving personal info request, failed sending response");
-                return;
+            else {
+                data = new byte[] { Program.INFO_WITHOUT_IMAGE };
             }
+
+            client.GetStream().Write(data, 0, data.Length);
             #endregion
             #region Send name lenght
-            data = System.BitConverter.GetBytes(Program.self.publicName.Length);
-            try {
-                client.GetStream().Write(data, 0, data.Length);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Request aborted */
-                System.Console.Write("Impossible serving personal info request, failed sending name lenght");
-                return;
-            }
+            data = BitConverter.GetBytes(Program.self.publicName.Length);
+            client.GetStream().Write(data, 0, data.Length);
             #endregion
             #region Send name
-            data = System.Text.Encoding.ASCII.GetBytes(Program.self.publicName);
-            try {
-                client.GetStream().Write(data, 0, data.Length);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Request aborted */
-                System.Console.Write("Impossible serving personal info request, failed sending name");
-                return;
-            }
+            data = Encoding.ASCII.GetBytes(Program.self.publicName);
+            client.GetStream().Write(data, 0, data.Length);
             #endregion
+            #region Send image if available
             if (Program.self.imagePath != null) {
                 #region Send image lenght
-                imageLenght = (new System.IO.FileInfo(Program.self.imagePath)).Length;
-                data = System.BitConverter.GetBytes(imageLenght);
-                try {
-                    client.GetStream().Write(data, 0, data.Length);
-                }
-                catch (System.Net.Sockets.SocketException) {
-                    /* Could not connect to the host, something went wrong. Request aborted */
-                    System.Console.Write("Impossible serving personal info request, failed sending image lenght");
-                    return;
-                }
+                fileSize = (new FileInfo(Program.self.imagePath)).Length;
+                data = BitConverter.GetBytes(fileSize);
+                client.GetStream().Write(data, 0, data.Length);
                 #endregion
                 #region Send Image
-                System.IO.FileStream fs;
-                /* Open the file */
-                try {
-                    fs = System.IO.File.OpenRead(Program.self.imagePath);
-                }
-                catch (System.IO.FileNotFoundException) {
-                    /* Could not find the file. File will not be sent */
-                    System.Console.Write("Impossible send file, file not found");
-                    return;
-                }
-                /* Send the file */
-                data = new byte[4 * 1024 * 1024];
+                data = new byte[Program.bufferSize];
                 long dataSent = 0;
-                long fileSize = (new System.IO.FileInfo(Program.self.imagePath)).Length;
                 while (dataSent < fileSize) {
                     int sizeOfLastRead = 0;
                     try {
-                        sizeOfLastRead = fs.Read(data, 0, (int)System.Math.Min(fileSize - dataSent, (long)data.Length));
+                        sizeOfLastRead = fs.Read(data, 0, (int)Math.Min(fileSize - dataSent, (long)data.Length));
                     }
                     catch {
-                        /* Could not read the file. File will not be sent */
-                        System.Console.Write("Impossible send file, error will reading");
+                        Debug.Write("Impossible send file, error will reading");
                         return;
                     }
                     client.GetStream().Write(data, 0, sizeOfLastRead);
@@ -246,43 +249,34 @@ namespace Jubilant_Waffle {
 
                 #endregion
             }
+            #endregion
         }
-
-        private void ReceiveFile(System.Net.Sockets.TcpClient client) {
-            byte[] data;
-            int fileNameLenght;
+        private void ReceiveFile(TcpClient client) {
+            /// <summary>
+            /// Enstablish a connect with the remote party and manage the reception of a file.
+            /// Several dialog may be launched according to the application settings (i.e. AutoSave, UseDefault)
+            /// 
+            /// The method may lauch SocketException if the socket time out expires
+            /// </summary>
+            byte[] data;                // Buffer for the socket
+            int lenght;                 // Support variable that will contains the lenght of the next message in the stream (i.e. filename)
             string filename, path;
             long fileSize;
-            long alreadyReceived = 0;
             int sizeOfLastRead;
-            System.IO.FileStream fs;
+            FileStream fs;
             #region Read file name lenght
             data = new byte[4];
-            try {
-                client.GetStream().Read(data, 0, 4);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Request aborted */
-                System.Console.Write("Impossible receiving file, failed reading file name lenght");
-                return;
-            }
-            fileNameLenght = System.BitConverter.ToInt32(data, 0);
+            client.GetStream().Read(data, 0, 4);
+            lenght = BitConverter.ToInt32(data, 0);
             #endregion
             #region Read file name
-            data = new byte[fileNameLenght];
-            try {
-                client.GetStream().Read(data, 0, fileNameLenght);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Request aborted */
-                System.Console.Write("Impossible receiving file, failed reading file name");
-                return;
-            }
-            filename = System.Text.Encoding.ASCII.GetString(data);
+            data = new byte[lenght];
+            client.GetStream().Read(data, 0, lenght);
+            filename = Encoding.ASCII.GetString(data);
             #endregion
             #region Response
             if (!AutoSave) {
-                //TODO Prompt accept connection
+                /* The user wants to be notified each time a user tries to send a file */
                 string name;
                 lock (Program.users) {
                     try {
@@ -300,9 +294,11 @@ namespace Jubilant_Waffle {
                 }
             }
             if (!UseDefault) {
-                /* Dialog requires STA thread, but this thread is STA. */
-                System.Threading.Thread t = new System.Threading.Thread(() => res = FolderSelectionDialog.ShowDialog());
-                t.SetApartmentState(System.Threading.ApartmentState.STA);
+                /* FolderSelectionDialog requires STA thread, but this thread is MTA.
+                 * A new thread STA is launche to open the dialog
+                 */
+                Thread t = new Thread(() => res = FolderSelectionDialog.ShowDialog());
+                t.SetApartmentState(ApartmentState.STA);
                 t.Start();
                 t.Join();
                 if (res == DialogResult.OK) {
@@ -318,30 +314,34 @@ namespace Jubilant_Waffle {
             #endregion
             #region Read file size
             data = new byte[8];
-            try {
-                client.GetStream().Read(data, 0, 8);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Request aborted */
-                System.Console.Write("Impossible receiving file, failed reading file size");
-                return;
-            }
-            fileSize = System.BitConverter.ToInt64(data, 0);
+            client.GetStream().Read(data, 0, 8);
+            fileSize = BitConverter.ToInt64(data, 0);
             #endregion
             #region Handle filename conflicts
-            lock (fsLocker) {
+            /* If the file already exists, the current file will be stored under the name <filename>(1).*
+             * If <filename>(1).* already exists, it will be stored as <filename>(2).* and so on
+             */
+            lock (fsLock) {
+                /* The lock is acquire to possible race conditions in those cases when two request are served
+                 * at the same time for file that have the same name.
+                 * 
+                 * WARNING: it does not consider cases in which the another file is being created by another application 
+                 * or by the user!
+                 */
                 if (!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(path))) {
                     System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
                 }
-                if (System.IO.File.Exists(path)) {
-                    string noEx = path.Substring(0, path.LastIndexOf("."));
-                    int i = 1;
-                    string ex = path.Substring(path.LastIndexOf("."));
-                    while (System.IO.File.Exists(path)) {
+                if (File.Exists(path)) {
+                    string noEx = path.Substring(0, path.LastIndexOf("."));     // Full path with no file extension
+                    int i = 1;                                                  // File number
+                    string ex = path.Substring(path.LastIndexOf("."));          // The extension of the file
+                    while (File.Exists(path)) {
                         path = noEx + "(" + i.ToString() + ")" + ex;
                         i++;
                     }
                 }
+                /* The file is immediately created before releasing the lock */
+                fs = new FileStream(path, System.IO.FileMode.Create);
             }
             #endregion
             #region Setup ProgressBar
@@ -349,29 +349,19 @@ namespace Jubilant_Waffle {
             fts.AddToPanel(Program.mainbox.ProgressBarsInPanel);
             #endregion
             #region Receive file
-            data = new byte[4 * 1024 * 1024];
-            fs = new System.IO.FileStream(path, System.IO.FileMode.Create);
-            while (alreadyReceived < fileSize && !_cancelCurrent) {
-                try {
-                    sizeOfLastRead = client.GetStream().Read(data, 0, (int)System.Math.Min((long)4 * 1024 * 1024, fileSize - alreadyReceived));
-                }
-                catch (System.Net.Sockets.SocketException) {
-                    /* Could not connect to the host, something went wrong. Request aborted */
-                    System.Console.Write("Impossible receiving file, failed reading file form socket");
-                    return;
-                }
+            data = new byte[Program.bufferSize];
+            long alreadyReceived = 0;
+            while (alreadyReceived < fileSize && fts.cancel) {
+                sizeOfLastRead = client.GetStream().Read(data, 0, (int)Math.Min(Program.bufferSize, fileSize - alreadyReceived));
                 if (sizeOfLastRead == 0) {
-                    /* Could not connect to the host, something went wrong. Request aborted */
-                    System.Console.Write("Impossible receiving file, user canceled or disconnected?");
+                    Debug.Write("Impossible receiving file, user canceled transfer or disconnected?");
                     return;
                 }
                 alreadyReceived += sizeOfLastRead;
-                System.Diagnostics.Debug.WriteLine("Sent " + alreadyReceived.ToString() + "B out of " + fileSize.ToString() + "B");
+                Debug.WriteLine("Sent " + alreadyReceived.ToString() + "B out of " + fileSize.ToString() + "B");
                 fs.Write(data, 0, sizeOfLastRead);
                 fts.UpdateProgress();
             }
-            /* reset cancelCurrent. It assures that if it has been sent, it wont be active for next file in the list */
-            _cancelCurrent = false;
             fs.Close();
             #endregion
             #region Unzip

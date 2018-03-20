@@ -76,6 +76,7 @@
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Share With...";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.PreventClose);
             this.ResumeLayout(false);
 
         }

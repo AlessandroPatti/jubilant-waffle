@@ -1,38 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
+using System.IO.Pipes;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Jubilant_Waffle {
     public partial class Client : Form {
-        /* Map of the users known. It indexed by IP address since each connection brings the IP */
-        System.Collections.Generic.LinkedList<FileToSend> files;
-        System.Net.Sockets.UdpClient udp;
-        /* Pipe used to communicate with other istances (i.e. right click send) */
-        bool _cancelCurrent = false; // This is used to undo the current transfer
-        string defaultImagePath; //Use this image if none is selected
-        System.Net.Sockets.TcpListener instancesListener;
-        const int port = 20000;
-        const int timeout = 200000;
-        const int bufferSize = 4 * 1024 * 1024;
+        LinkedList<FileToSend> files;                                       // Will store all the files enqueued for sending
+        System.Net.Sockets.UdpClient udp;                                   // The udp socket used to listen for new user connecting
+        System.Net.Sockets.TcpListener instancesListener;                   // Used by other istances of the same program to enqueue a file that as been right clicked.
+
+
         public Client() {
-            udp = new System.Net.Sockets.UdpClient(port);
-            files = new System.Collections.Generic.LinkedList<FileToSend>();
-            #region Initialize Form
+            udp = new UdpClient(Program.port);
+            files = new LinkedList<FileToSend>();
             InitializeComponent();
-            this.FormClosing += PreventClose;
-            /* Image ListView */
-            defaultImagePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + @"\icons\default-user-image.png";
-            #endregion
-            #region Initiliaze socket to list for local connections
-            instancesListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port + 1);
-            #endregion
             #region Calling show to fire load
             Size tmp = this.Size;
             this.Size = new Size(0, 0);
@@ -44,89 +31,123 @@ namespace Jubilant_Waffle {
             System.Threading.Thread ConsumeFileListThread = new System.Threading.Thread(() => ConsumeFileList());
             System.Threading.Thread ListenForConnectionsThread = new System.Threading.Thread(() => ListenForConnections());
             System.Threading.Thread ReadMQThread = new System.Threading.Thread(() => ReadMS());
+#if DEBUG
             ConsumeFileListThread.Name = "ConsumeFileList";
             ListenForConnectionsThread.Name = "ListenForConnections";
             ReadMQThread.Name = "ReadMQ";
+#endif
             ConsumeFileListThread.Start();
             ListenForConnectionsThread.Start();
             ReadMQThread.Start();
             #endregion
         }
 
-        private void PreventClose(object sender, FormClosingEventArgs e) {
-            e.Cancel = true;
-        }
-
         delegate void UpdateListCallback();
         private void UpdateList() {
+            ///<summary>
+            /// Update the content of the form listing all the known users with the relative images.
+            /// At the end of the method, the form is shown.
+            ///</summary>
+
             if (this.InvokeRequired) {
+                /* The current thread is not the owner of the form so the owner
+                 * is asked to call the method to perform the modification
+                 */
                 UpdateListCallback callback = new UpdateListCallback(UpdateList);
                 UserListView.Invoke(callback);
             }
             else {
                 ImageList imgl = new ImageList();
                 Image img;
-                imgl.ImageSize = new Size(150, 150);
-                imgl.ColorDepth = ColorDepth.Depth32Bit;
-                UserListView.Clear();
+                imgl.ImageSize = new Size(150, 150);                            // The size of the pictures of the user. 
+                imgl.ColorDepth = ColorDepth.Depth32Bit;                        // The quality of the images. 32bit is the maximum.
+                UserListView.Clear();                                           // Clear out the current list of user. It may contains users that are now disconnected.
                 lock (Program.users) {
+                    #region AddImages
                     foreach (User u in Program.users.Values) {
-                        img = Image.FromFile(u.imagePath != null ? u.imagePath : defaultImagePath);
+                        img = Image.FromFile(u.imagePath ?? Program.defaultImagePath);
                         imgl.Images.Add(u.ip, img);
                     }
                     UserListView.LargeImageList = imgl;
+                    #endregion
+                    #region Add names
+                    /* Each image in the image list has an index. Since the list of user is scanned 
+                     * in the same order, each i-th name in the for will correspond the the i-th image
+                     * scanned before, so to get the right index of the current name and image is
+                     * enough to use a counter (the local variable "i") 
+                     */
                     var i = 0;
                     foreach (User u in Program.users.Values) {
                         UserListView.Items.Add(u.ip, u.publicName, i++);
+                        /* The image key can be retrived when the item is selected. 
+                         * By storing the ip of the corresponding user, it will be possible to get all
+                         * the information regarding him since the user are stored in a dictionary
+                         * where the key is the ip address.
+                         */
                         UserListView.Items[i - 1].ImageKey = u.ip;
                     }
+                    #endregion
                 }
                 CenterToScreen();
-                this.Show();
-                this.ShowInTaskbar = true;
+                Show();
+                ShowInTaskbar = true;
             }
         }
-        
+
 
         static public void EnqueueMessage(string msg) {
-            System.Net.Sockets.TcpClient client;
-            byte[] data;
+            /// <summary>
+            /// The main instance is listening on the tcp port 20001 for other instances of the application.
+            /// This method can be used to send a message (i.e. the path of the file) from anothre instance to the main one.
+            /// </summary>
 
-            client = new System.Net.Sockets.TcpClient();
-            client.Connect(System.Net.IPAddress.Loopback, port + 1);
-            data = System.BitConverter.GetBytes(msg.Length);
+            byte[] data;
+            TcpClient client = new TcpClient();
+            client.Connect(System.Net.IPAddress.Loopback, Program.port + 1);
+
+            /* First send the lenght of the string on 4 bytes, then the string itself */
+            data = BitConverter.GetBytes(msg.Length);
             client.GetStream().Write(data, 0, data.Length);
-            data = System.Text.Encoding.ASCII.GetBytes(msg);
+            data = Encoding.ASCII.GetBytes(msg);
             client.GetStream().Write(data, 0, data.Length);
-            try {
-                client.GetStream().Read(data, 0, 1);
-            }
-            catch {
-                //TODO handle
-                return;
-            }
+
         }
         private void ReadMS() {
-            string msg = "", path = "";
-            byte[] data, len = new byte[4];
-            int lenght, count;
-            System.Net.Sockets.TcpClient client;
+            /// <summary>
+            /// This routine waits for connection of other instances on the tcp port 200001.
+            /// When a new connection occurs, first it reads from the socket the path of the file
+            /// then lets the user select to whom the file has to be sent, and finally enqueue the file.
+            /// </summary>
+            string msg;
+            string path;
+            byte[] data;
+            byte[] len = new byte[4];
+            int lenght;
+            int count;
+            TcpClient client;
+            instancesListener = new TcpListener(System.Net.IPAddress.Loopback, Program.port + 1);
             instancesListener.Start();
-            System.IO.Pipes.NamedPipeServerStream npss;
+            NamedPipeServerStream npss;
             while (true) {
-                #region read message from queue
+                #region Read message from the socket
                 client = instancesListener.AcceptTcpClient();
                 client.GetStream().Read(len, 0, len.Length);
-                lenght = System.BitConverter.ToInt32(len, 0);
+                lenght = BitConverter.ToInt32(len, 0);
                 data = new byte[lenght];
                 client.GetStream().Read(data, 0, data.Length);
-                path = System.Text.Encoding.ASCII.GetString(data);
+                path = Encoding.ASCII.GetString(data);
                 client.Close();
-                System.IO.FileInfo fi = new System.IO.FileInfo(path);
+
+                /* The path send using the right-click on the file sometimes is shortened
+                 * automatically by windows. Altought the path is still valid, the name of the file,
+                 * which as to be sent to the remote host, might be modified (e.g. example_file.txt -> EXA~1.txt)
+                 * The two followng lines aim at fixing the problem by retriving the full path from the FS.
+                 */
+                FileInfo fi = new FileInfo(path);
                 path = fi.FullName;
                 #endregion
                 #region Ask user
-                npss = new System.IO.Pipes.NamedPipeServerStream("JubilantWaffleInternal");
+                npss = new NamedPipeServerStream("JubilantWaffleInternal");
                 UpdateList();
                 npss.WaitForConnection();
                 /* Read response 
@@ -139,18 +160,18 @@ namespace Jubilant_Waffle {
                  */
 
                 npss.Read(len, 0, len.Length);
-                count = System.BitConverter.ToInt32(len, 0);
+                count = BitConverter.ToInt32(len, 0);
                 #endregion
                 #region Read Users
                 List<FileToSend> tmp = new List<FileToSend>();
                 FileToSend fts;
                 for (var i = 0; i < count; i++) {
                     npss.Read(len, 0, len.Length);
-                    lenght = System.BitConverter.ToInt32(len, 0);
+                    lenght = BitConverter.ToInt32(len, 0);
                     data = new byte[lenght];
                     npss.Read(data, 0, data.Length);
-                    msg = System.Text.Encoding.ASCII.GetString(data);
-                    fts = new FileToSend (path, msg, bufferSize/1024/1024);
+                    msg = Encoding.ASCII.GetString(data);
+                    fts = new FileToSend(path, msg, Program.bufferSize / 1024 / 1024);
                     fts.AddToPanel(Program.mainbox.ProgressBarsOutPanel);
                     tmp.Add(fts);
                 }
@@ -169,6 +190,10 @@ namespace Jubilant_Waffle {
             }
         }
         private void ConsumeFileList() {
+            /// <summary>
+            /// This method sleeps on a Monitor (i.e. condition variable) until a new file is pushed in the queue.
+            /// Once awake, it will rest awake until all files in the list have been consumed.
+            /// </summary>
             FileToSend fts;
             while (true) {
                 lock (files) {
@@ -180,136 +205,138 @@ namespace Jubilant_Waffle {
                     fts = files.First.Value;
                     files.RemoveFirst();
                 }
-                if(!fts.cancel)
-                    SendFile(fts, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), port));
+                if (!fts.cancel)
+                    /* The follonwing method can be executed on a separate thread to send multiple file at a time */
+                    SendFile(fts, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), Program.port));
             }
         }
-        private void SendFile(FileToSend fts, System.Net.IPEndPoint IPEndPoint) {
-            /// The file is sent using the following sintax
-            ///     - Control message 'FILE!'
-            ///     - File name lenght on 4 bytes
-            ///     - File name
-            ///     - File size on 8 bytes
-            ///     - File data
-            ///  
+        private void SendFile(FileToSend fts, IPEndPoint IPEndPoint) {
+            /// <summary>
+            /// Send the file to a remote host. It sends first the name and the lenght of the file and
+            /// wait for a response from the remote party. If it accepts the file, the files is zipped and sent.
+            /// </summary>
             #region variables
-            System.Net.Sockets.TcpClient dataChannel = new System.Net.Sockets.TcpClient(); // The tcp client used to send data 
-            dataChannel.ReceiveTimeout = dataChannel.SendTimeout = timeout;
-            System.IO.FileStream fs; //The file stream to be send 
-            byte[] data; // buffer for sockets
-            int nameLenght;
-            long dataSent = 0; // The amount of data already sent
+            TcpClient tcp = new TcpClient();                                    // The tcp client used to send data 
+
+            tcp.ReceiveTimeout = tcp.SendTimeout = Program.timeout;             // Set the timeout for the connection. if the timeout expires, it is asumend that the remote host has disconnected
+            FileStream fs;                                            // The file stream to be send 
+            byte[] data;
+            long dataSent = 0;                                                  // The amount of data already sent
             #endregion
             #region Open connection
-            data = System.Text.Encoding.ASCII.GetBytes("FILE!");
             try {
-                dataChannel.Connect(IPEndPoint);
-                dataChannel.GetStream().Write(data, 0, 5);
+                tcp.Connect(IPEndPoint);
+                tcp.GetStream().WriteByte(Program.FILE);
+                #endregion
+                #region Send file name lenght
+                data = BitConverter.GetBytes(Path.GetFileName(fts.path).Length);
+                tcp.GetStream().Write(data, 0, data.Length);
+                #endregion
+                #region Send file name
+                data = Encoding.ASCII.GetBytes(Path.GetFileName(fts.path));
+                tcp.GetStream().Write(data, 0, data.Length);
+                #endregion
+                #region Send file size
+                data = BitConverter.GetBytes(fts.fileSize);
+                tcp.GetStream().Write(data, 0, data.Length);
+                #endregion
+                #region Read response
+                tcp.GetStream().Read(data, 0, 1);
             }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. File will not be sent */
-                System.Console.Write("Impossible send file, connection unsuccessful");
+            catch (IOException) {
+                Debug.Write("Impossible send file, socket timeout expired");
+                //TODO Inform the user that transfer has failed
                 return;
             }
-            #endregion
-            //TODO eventually add a connection for control channel
-            #region Send file name lenght
-            nameLenght = System.IO.Path.GetFileName(fts.path).Length;
-            data = System.BitConverter.GetBytes(nameLenght);
-            try {
-                dataChannel.GetStream().Write(data, 0, data.Length);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. File will not be sent */
-                System.Console.Write("Impossible send file, failed sending file name lenght");
+            if (data[0] == Program.TRANSFER_DENY) {
+                /* The remote host refused the file */
+                //TODO Inform the user that transfer has failed
                 return;
             }
-            #endregion
-            #region Send file name
-            data = System.Text.Encoding.ASCII.GetBytes(System.IO.Path.GetFileName(fts.path));
-            try {
-                dataChannel.GetStream().Write(data, 0, data.Length);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. File will not be sent */
-                System.Console.Write("Impossible send file, failed sending file name");
-                return;
-            }
-            #endregion
-            #region Read response
-            //TODO
             #endregion
             #region Zip
             //TODO zip the file
             #endregion
-            #region Send file length
-            data = System.BitConverter.GetBytes(fts.fileSize);
-            try {
-                dataChannel.GetStream().Write(data, 0, data.Length);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. File will not be sent */
-                System.Console.Write("Impossible send file, connection unsuccessful");
-                return;
-            }
-            #endregion
             #region Send file
             /* Open the file */
             try {
-                fs = System.IO.File.OpenRead(fts.path);
+                fs = File.OpenRead(fts.path);
             }
-            catch (System.IO.FileNotFoundException) {
-                /* Could not find the file. File will not be sent */
-                System.Console.Write("Impossible send file, file not found");
+            catch (FileNotFoundException) {
+                Debug.Write("Impossible send file, file not found");
                 return;
             }
 
             /* Send the file */
-            data = new byte[bufferSize];
+            data = new byte[Program.bufferSize];
             int sizeOfLastRead = 0;
             while (dataSent < fts.fileSize && !fts.cancel) {
                 try {
-                    sizeOfLastRead = fs.Read(data, 0, (int)System.Math.Min(fts.fileSize - dataSent, data.LongLength));
+                    sizeOfLastRead = fs.Read(data, 0, (int)Math.Min(fts.fileSize - dataSent, data.LongLength));
                 }
-                catch {
-                    /* Could not read the file. File will not be sent */
-                    System.Console.Write("Impossible send file, error will reading");
+                catch (IOException) {
+                    Debug.Write("Impossible send file, error will reading");
                     return;
                 }
-                dataChannel.GetStream().Write(data, 0, sizeOfLastRead);
+                try {
+                    tcp.GetStream().Write(data, 0, sizeOfLastRead);
+                }
+                catch (IOException e) {
+
+                    Debug.Write("Impossible send file, error will reading");
+                    return;
+                }
                 dataSent += sizeOfLastRead;
-                System.Diagnostics.Debug.WriteLine("Sent " + dataSent.ToString() + "B out of " + fts.fileSize.ToString() + "B");
+                Debug.WriteLine("Sent " + dataSent.ToString() + "B out of " + fts.fileSize.ToString() + "B");
                 fts.UpdateProgress();
             }
-            dataChannel.Close();
+            tcp.Close();
             #endregion
         }
 
         private void ListenForConnections() {
-            /// Listen for user in/out in the LAN
+            /// <summary>
+            /// Listen on udp port 20000 for incoming packet. Another application will 
+            /// produce UDP traffic only to announce itself on the net when online, 
+            /// or to inform other parties that is disconection when going offline
+            /// </summary>
             /// 
+            /// 
+            IPEndPoint endpoint = new IPEndPoint(0, 0);             // The endpoint will identify the user that sent the message
+            byte[] msg;                                             // Buffer for udp packets
             while (true) {
-                System.Net.IPEndPoint endpoint = new System.Net.IPEndPoint(0, 0); // The endpoint will identify the user that sent the message
-                byte[] data = udp.Receive(ref endpoint); //Wait for a new message. It is blocking
-                string msg = System.Text.Encoding.ASCII.GetString(data);
-                switch (msg) {
-                    /* New user connection */
-                    case "HELLO":
-                        if (endpoint.Address.ToString() == Program.self.ip)
+                msg = udp.Receive(ref endpoint);
+                switch (msg[0]) {
+                    case Program.HELLO:
+                        if (endpoint.Address.ToString() == Program.self.ip) {
                             continue;
-                        if (!Program.users.ContainsKey(endpoint.Address.ToString())) {
-                            /* 
-                             * Add only if user is not already present.
-                             * Excuted on the same thread will manage only a connection at a time
-                             * but do not require concurrency control on the list of users?
+                            /* Since the announcement is done in broadcast, if the application status is "online"
+                             * it can receive back (depending on the switch) the broadcast packets it sends.
+                             * Those packet will be discarded.
                              */
-                            AddNewUser(endpoint.Address);
+                        }
+                        if (!Program.users.ContainsKey(endpoint.Address.ToString())) {
+                            /* The user is not know, thus it has to be added.
+                             */
+                            try {
+                                AddNewUser(endpoint.Address);
+                            }
+                            catch (IOException) {
+                                /* IO exception are launched in the method if the user disconnect or
+                                 * if it was not possible to store the informations
+                                 */
+                                //TODO how to discen the two case?
+                            }
                         }
                         break;
-                    /* An user is leaving */
-                    case "BYE!!":
+                    case Program.BYE:
                         if (Program.users.ContainsKey(endpoint.Address.ToString())) {
-                            Program.users.Remove(endpoint.Address.ToString());
+                            /* If the user is known it has to be removed from the list of online user
+                             * so that it wont appear in the list when the local user tries to send a file
+                             */
+                            lock (Program.users) {
+                                Program.users.Remove(endpoint.Address.ToString());
+                            }
                         }
                         break;
 
@@ -317,139 +344,72 @@ namespace Jubilant_Waffle {
             }
         }
         private void AddNewUser(System.Net.IPAddress userAddress) {
-            #region Connect to user to ask info
-            System.Net.Sockets.TcpClient tcp = new System.Net.Sockets.TcpClient();
-            tcp.SendTimeout = tcp.ReceiveTimeout = timeout;
-            try {
-                tcp.Connect(new System.Net.IPEndPoint(userAddress, port));
-            }
-            catch {
-                /* Could not connect to the host, something went wrong. Nothing will happen */
-                System.Console.Write("Impossible add new user, connection unsuccessful");
-                return;
-            }
-            #endregion
-            #region Ask for info
-            try {
-                tcp.Client.Send(System.Text.Encoding.ASCII.GetBytes("WHO??"));
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Nothing will happen */
-                System.Console.Write("Impossible add new user, request unsuccessful");
-                return;
-            }
+            /// <summary>
+            /// Connects to the remote host and ask for user's informations (i.e. name and eventually image).
+            /// The method can throw IOException when the socket timeout expires.
+            /// </summary>
+
+            TcpClient tcp = new TcpClient();
+            byte[] data, response;          // Buffer for socket
+            string name;                    // Will contain the name of the user
+            int lenght;                     // Support variable that is used to store the lenght of the next message (i.e. name lenght)
+            string imagepath = null;        // The path of the image file, if it will be received. The name of the file will be <ip_address>.png to ensure that it will be unique. 
+
+            tcp.SendTimeout = tcp.ReceiveTimeout = Program.timeout;
+
+            #region Connect to user and ask info
+            tcp.Connect(new IPEndPoint(userAddress, Program.port));
+            tcp.GetStream().WriteByte(Program.INFORMATION_REQUEST);
             #endregion
             #region Get reply message
-            /* The reply message is
-             *      - MARIO  when the message contains the image. In this case 
-             *          the message will have this format
-             *              - 4 byte of name lenght
-             *              - name
-             *              - 8 byte for image lengt
-             *              - image
-             *      - LUIGI when the user do not have any image. In this case 
-             *          the message will have this format
-             *              - 4 byte of name lenght
-             *              - name
-             */
-            byte[] msgByte = new byte[5];
-            string msg;
-            try {
-                tcp.GetStream().Read(msgByte, 0, 5);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Nothing will happen */
-                System.Console.Write("Impossible add new user, reply unsuccessful");
-                return;
-            }
-            msg = System.Text.Encoding.ASCII.GetString(msgByte);
+            /* The reply message is always positive. It is used to know if the user will also send an image or not */
+            response = new byte[1];
+            tcp.GetStream().Read(response, 0, 1);
             #endregion
             #region Get Name
-
-            /* 
-             * First read the leght of the name 
-             */
-            Int32 nameLenght;
-            byte[] lenght = new byte[4];
-            byte[] nameByte;
-            string name;
-            try {
-                tcp.GetStream().Read(lenght, 0, 4);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Nothing will happen */
-                System.Console.Write("Impossible add new user, name lenght unsuccessful");
-                return;
-            }
-            nameLenght = System.BitConverter.ToInt32(lenght, 0); //TODO how to manage Big and little endian?
-
-            /* 
-             * Read the actual name 
-             */
-            nameByte = new byte[nameLenght];
-            try {
-                tcp.GetStream().Read(nameByte, 0, nameLenght);
-            }
-            catch (System.Net.Sockets.SocketException) {
-                /* Could not connect to the host, something went wrong. Nothing will happen */
-                System.Console.Write("Impossible add new user, name unsuccessful");
-                return;
-            }
-            name = System.Text.Encoding.ASCII.GetString(nameByte);
+            /* Get name lenght */
+            data = new byte[4];
+            tcp.GetStream().Read(data, 0, 4);
+            lenght = BitConverter.ToInt32(data, 0); //TODO how to manage Big and little endian?
+            /* Get name */
+            data = new byte[lenght];
+            tcp.GetStream().Read(data, 0, data.Length);
+            name = Encoding.ASCII.GetString(data);
             #endregion
             #region Eventually get image and store it into disk
-            if (msg == "MARIO") {
-                /* 
-                 * First read the leght of the image file 
-                 */
-                long imageLenght;
-                byte[] image;
-                lenght = new byte[8];
-                try {
-                    tcp.GetStream().Read(lenght, 0, 8);
-                }
-                catch (System.Net.Sockets.SocketException) {
-                    /* Could not connect to the host, something went wrong. Nothing will happen */
-                    System.Console.Write("Impossible add new user, image lenght unsuccessful");
-                    return;
-                }
-                imageLenght = System.BitConverter.ToInt64(lenght, 0); //TODO how to manage big and little endian?
+            if (response[0] == Program.INFO_WITH_IMAGE) {
+                long fileSize;                          // Support variable that is used to store the lenght of the image file
 
+                /* Read file size first */
+                data = new byte[8];
+                tcp.GetStream().Read(data, 0, data.Length);
+                fileSize = BitConverter.ToInt64(data, 0);
 
-                /*
-                 * Read the actual image file
-                 */
-                if (!System.IO.Directory.Exists("user_pic"))
-                    System.IO.Directory.CreateDirectory("user_pic");
-                byte[] data = new byte[4 * 1024 * 1024];
-                //TODO existing file will be automatically overwritten. Modify this behaviour later
-                System.IO.FileStream fs = new System.IO.FileStream("user_pic/" + userAddress.ToString() + ".png", System.IO.FileMode.Create);
+                /* Read the actual image file */
+                if (!Directory.Exists(Program.AppDataFolder + @"\user_pic")) {
+                    /* The user picture will be stored in the the user_pic folder under the AppData folder.
+                     * If it does not exists, it should be created. 
+                     */
+                    Directory.CreateDirectory(Program.AppDataFolder + @"\user_pic");
+                }
+                data = new byte[Program.bufferSize];
+                imagepath = Program.AppDataFolder + @"\user_pic\" + userAddress.ToString() + ".png";
+                FileStream fs = new FileStream(imagepath, FileMode.Create);
                 long alreadyReceived = 0;
                 int sizeOfLastRead = 0;
-                while (alreadyReceived < imageLenght && !_cancelCurrent) {
-                    try {
-                        sizeOfLastRead = tcp.GetStream().Read(data, 0, (int)System.Math.Min((long)4 * 1024 * 1024, imageLenght - alreadyReceived));
-                    }
-                    catch (System.Net.Sockets.SocketException) {
-                        /* Could not connect to the host, something went wrong. Request aborted */
-                        System.Console.Write("Impossible receiving file, failed reading file size");
-                        return;
-                    }
+                while (alreadyReceived < fileSize) {
+                    sizeOfLastRead = tcp.GetStream().Read(data, 0, (int)Math.Min(Program.bufferSize, fileSize - alreadyReceived));
                     alreadyReceived += sizeOfLastRead;
-                    System.Diagnostics.Debug.WriteLine("Sent " + alreadyReceived.ToString() + "B out of " + imageLenght.ToString() + "B");
                     fs.Write(data, 0, sizeOfLastRead);
+                    Debug.WriteLine("Sent " + alreadyReceived.ToString() + "B out of " + fileSize.ToString() + "B");
                 }
                 fs.Close();
             }
             #endregion
             #region Add the user to the list of known
             lock (Program.users) {
-                if (msg == "MARIO") {
-                    Program.users.Add(userAddress.ToString(), new User(name, userAddress.ToString(), "user_pic/" + userAddress.ToString() + ".png"));
-                }
-                else {
-                    Program.users.Add(userAddress.ToString(), new User(name, userAddress.ToString()));
-                }
+                /* The imagepath variable willbe null if no image has been received. */
+                Program.users.Add(userAddress.ToString(), new User(name, userAddress.ToString(), imagepath));
             }
             #endregion
         }
@@ -459,12 +419,12 @@ namespace Jubilant_Waffle {
                 byte[] data;
                 System.IO.Pipes.NamedPipeClientStream npcs = new System.IO.Pipes.NamedPipeClientStream("JubilantWaffleInternal");
                 npcs.Connect();
-                data = System.BitConverter.GetBytes(UserListView.SelectedItems.Count);
+                data = BitConverter.GetBytes(UserListView.SelectedItems.Count);
                 npcs.Write(data, 0, data.Length);
                 foreach (ListViewItem item in UserListView.SelectedItems) {
-                    data = System.BitConverter.GetBytes(item.ImageKey.Length);
+                    data = BitConverter.GetBytes(item.ImageKey.Length);
                     npcs.Write(data, 0, data.Length);
-                    data = System.Text.Encoding.ASCII.GetBytes(item.ImageKey);
+                    data = Encoding.ASCII.GetBytes(item.ImageKey);
                     npcs.Write(data, 0, data.Length);
                 }
                 npcs.WaitForPipeDrain();
@@ -478,7 +438,7 @@ namespace Jubilant_Waffle {
                 byte[] data;
                 System.IO.Pipes.NamedPipeClientStream npcs = new System.IO.Pipes.NamedPipeClientStream("JubilantWaffleInternal");
                 npcs.Connect();
-                data = System.BitConverter.GetBytes(0);
+                data = BitConverter.GetBytes(0);
                 npcs.Write(data, 0, data.Length);
                 npcs.WaitForPipeDrain();
                 npcs.Close();
@@ -486,5 +446,13 @@ namespace Jubilant_Waffle {
                 this.ShowInTaskbar = false;
             }
         }
+
+        private void PreventClose(object sender, FormClosingEventArgs e) {
+            ///<summary>
+            /// Added to the FormClosing event, will prevent the form to be closed in any way.
+            ///</summary>
+            e.Cancel = true;
+        }
+
     }
 }
