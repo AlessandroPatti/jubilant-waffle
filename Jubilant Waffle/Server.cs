@@ -348,7 +348,7 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Setup ProgressBar
-            FileToSend fts = new FileToSend(path, "", Program.bufferSize / 1024 / 1024, fileSize);
+            FileToSend fts = new FileToSend(path, "", fileSize);
             fts.AddToPanel(Program.mainbox.ProgressBarsInPanel);
             #endregion
             #region Receive file
@@ -371,6 +371,9 @@ namespace Jubilant_Waffle {
             catch (IOException) {
                 // User cancelled the transfer or disconnected
                 fts.Error();
+                fs.Close();
+                File.Delete(path);
+                return;
             }
             fs.Close();
             #endregion

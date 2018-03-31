@@ -19,11 +19,13 @@ namespace Jubilant_Waffle {
         public long fileSize;                       // The size of the file
         public ProgressBar pbar;                    // A progress bar for the trasfer
         public Label label;                         // A label that show the name of the file above the progress bar
+        public Label time;                          // A label that show an estimation fot time
         public Button button;                       // A buton to cancel the transfer
         public FlowLayoutPanel container;           // The container for all the visual elements.
         volatile public bool cancel;                // This boolean is set to true when the user wants to cancel the transfer. It has to be check to stop the transfer
+        public long startTime;
 
-        public FileToSend(string path, string ip, int PBarStep, long fileSize = 0) {
+        public FileToSend(string path, string ip, long fileSize = 0) {
             this.path = path;
             this.ip = ip;
             /* If the file size is not set, the constructor will try to retrieve it from the FS.
@@ -33,11 +35,12 @@ namespace Jubilant_Waffle {
             this.fileSize = fileSize != 0 ? fileSize : (new System.IO.FileInfo(path)).Length;
             label = new Label();
             label.Text = System.IO.Path.GetFileName(path);
-
+            
+            time = new Label();
+            
             pbar = new ProgressBar();
             pbar.Minimum = 0;
             pbar.Maximum = (int)Math.Ceiling((double)this.fileSize / (1024 * 1024));
-            pbar.Step = Math.Max(1, Math.Min(PBarStep, pbar.Maximum));
 
             button = new Button();
             button.Size = new Size(20, 20);
@@ -49,10 +52,12 @@ namespace Jubilant_Waffle {
 
             container = new FlowLayoutPanel();
             container.Controls.Add(label);
+            container.Controls.Add(time);
             container.Controls.Add(pbar);
             container.Controls.Add(button);
-        }
 
+            startTime = -1;
+        }
         public delegate void AddToPanelCallback(Control panel);
         public void AddToPanel(Control panel) {
             if (panel.InvokeRequired) {
@@ -62,8 +67,10 @@ namespace Jubilant_Waffle {
             else {
                 /* The size of the visual elements are adapted to the size of the panel to fit all the width. */
                 pbar.Size = new Size(panel.Size.Width - 60, 20);
+                Size labelTextSize;
                 label.Size = new Size(panel.Width - 25, 15);
-                container.Size = new Size(panel.Size.Width - 25, label.Size.Height + pbar.Size.Height + 5);
+                time.Size = new Size(panel.Width - 25, 15);
+                container.Size = new Size(panel.Size.Width - 25, label.Size.Height + time.Size.Height + pbar.Size.Height + 5);
                 panel.Controls.Add(container);
             }
         }
@@ -74,8 +81,16 @@ namespace Jubilant_Waffle {
                 UpdateProgressCallback callback = new UpdateProgressCallback(UpdateProgress);
                 pbar.Invoke(callback, status);
             }
-            else if((((double)(status)) / fileSize) > (double)(pbar.Value + pbar.Step) / pbar.Maximum) {
-                pbar.PerformStep();
+            else {
+                if (startTime == -1) {
+                    startTime = DateTime.Now.Ticks;
+                }
+                else {
+                    long cTime = DateTime.Now.Ticks - startTime;
+                    long estimation = cTime * fileSize / status;
+                    time.Text = TimeSpan.FromTicks(estimation).ToString(@"hh\:mm\:ss") + " remaining...";
+                }
+                pbar.Value = (int)Math.Ceiling((double)status / (1024 * 1024));
                 if (pbar.Value == pbar.Maximum) {
                     /* The transfer has ended. The button will be still active to hide the 
                      * the transfer from the panel but the icon will change for a better visualization.

@@ -121,6 +121,8 @@
             // ProgressBarsOutPanel
             // 
             this.ProgressBarsOutPanel.AutoScroll = true;
+            this.ProgressBarsOutPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.ProgressBarsOutPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.ProgressBarsOutPanel.Location = new System.Drawing.Point(11, 45);
             this.ProgressBarsOutPanel.Name = "ProgressBarsOutPanel";
             this.ProgressBarsOutPanel.Size = new System.Drawing.Size(361, 304);
@@ -130,6 +132,8 @@
             // ProgressBarsInPanel
             // 
             this.ProgressBarsInPanel.AutoScroll = true;
+            this.ProgressBarsInPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.ProgressBarsInPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.ProgressBarsInPanel.Location = new System.Drawing.Point(11, 45);
             this.ProgressBarsInPanel.Name = "ProgressBarsInPanel";
             this.ProgressBarsInPanel.Size = new System.Drawing.Size(361, 304);

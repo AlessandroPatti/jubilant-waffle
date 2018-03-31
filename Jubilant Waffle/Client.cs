@@ -151,7 +151,7 @@ namespace Jubilant_Waffle {
                     List<FileToSend> tmp = new List<FileToSend>();
                     FileToSend fts;
                     foreach (ListViewItem item in UserListView.SelectedItems) {
-                        fts = new FileToSend(path, item.ImageKey, Program.bufferSize / 1024 / 1024);
+                        fts = new FileToSend(path, item.ImageKey);
                         fts.AddToPanel(Program.mainbox.ProgressBarsOutPanel);
                         tmp.Add(fts);
                     }
