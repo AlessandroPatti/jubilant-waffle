@@ -68,13 +68,13 @@ namespace Jubilant_Waffle {
             }
         }
 
-        public delegate void UpdateProgressCallback();
-        public void UpdateProgress() {
+        public delegate void UpdateProgressCallback(long status);
+        public void UpdateProgress(long status) {
             if (pbar.InvokeRequired) {
                 UpdateProgressCallback callback = new UpdateProgressCallback(UpdateProgress);
-                pbar.Invoke(callback);
+                pbar.Invoke(callback, status);
             }
-            else {
+            else if((((double)(status)) / fileSize) > (double)(pbar.Value + pbar.Step) / pbar.Maximum) {
                 pbar.PerformStep();
                 if (pbar.Value == pbar.Maximum) {
                     /* The transfer has ended. The button will be still active to hide the 
@@ -82,6 +82,20 @@ namespace Jubilant_Waffle {
                      */
                     button.BackgroundImage = Image.FromFile(@"icons\done.png");
                 }
+            }
+        }
+        public delegate void ErrorCallback();
+        public void Error() {
+            /// <summary>
+            /// To be activated if the transfer fails
+            /// </summary>
+            if (pbar.InvokeRequired) {
+                ErrorCallback callback = new ErrorCallback(Error);
+                pbar.Invoke(callback);
+            }
+            else {
+                pbar.ForeColor = Color.Red;
+                button.BackgroundImage = Image.FromFile(@"icons\done.png");
             }
         }
         private void ProgressBarButtonClick(object sender, EventArgs e) {

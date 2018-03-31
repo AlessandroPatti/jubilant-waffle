@@ -19,7 +19,7 @@ namespace Jubilant_Waffle {
         public static Wizard wizard;                                // Used to change main options of the application. It is automatically called at first launch of the application-
         public static Dictionary<String, User> users;               // The list of users that are online. Its collected by the client. The key will be the IP address, which has to be unique.
 
-        static NotifyIcon trayIcon;
+        public static NotifyIcon trayIcon;
 
         
         public static Mutex mutex = null;                           // Used to make the apllication single-instance.

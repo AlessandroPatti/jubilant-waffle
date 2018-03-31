@@ -264,7 +264,7 @@ namespace Jubilant_Waffle {
                 }
                 dataSent += sizeOfLastRead;
                 Debug.WriteLine("Sent " + dataSent.ToString() + "B out of " + fts.fileSize.ToString() + "B");
-                fts.UpdateProgress();
+                fts.UpdateProgress(dataSent);
             }
             tcp.Close();
             #endregion

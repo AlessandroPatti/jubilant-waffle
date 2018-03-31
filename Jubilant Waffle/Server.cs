@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -175,8 +176,8 @@ namespace Jubilant_Waffle {
                         break;
                 }
             }
-            catch (SocketException) {
-                //TODO
+            catch (IOException) {
+                
                 return;
             }
             #endregion
@@ -289,10 +290,12 @@ namespace Jubilant_Waffle {
                 }
                 DialogResult res = MessageBox.Show("User '" + name + "' is willing to send you the file '" + filename + "'. Do you want to accept?", "", MessageBoxButtons.YesNo);
                 if (res == DialogResult.No) {
+                    client.GetStream().WriteByte(Program.TRANSFER_DENY);
                     // User refused the file
                     return;
                 }
             }
+            client.GetStream().WriteByte(Program.TRANSFER_OK);
             if (!UseDefault) {
                 /* FolderSelectionDialog requires STA thread, but this thread is MTA.
                  * A new thread STA is launche to open the dialog
@@ -345,22 +348,29 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Setup ProgressBar
-            FileToSend fts = new FileToSend(path, "", 4, fileSize);
+            FileToSend fts = new FileToSend(path, "", Program.bufferSize / 1024 / 1024, fileSize);
             fts.AddToPanel(Program.mainbox.ProgressBarsInPanel);
             #endregion
             #region Receive file
             data = new byte[Program.bufferSize];
             long alreadyReceived = 0;
-            while (alreadyReceived < fileSize && fts.cancel) {
-                sizeOfLastRead = client.GetStream().Read(data, 0, (int)Math.Min(Program.bufferSize, fileSize - alreadyReceived));
-                if (sizeOfLastRead == 0) {
-                    Debug.Write("Impossible receiving file, user canceled transfer or disconnected?");
-                    return;
+            try {
+                while (alreadyReceived < fileSize && !fts.cancel) {
+                    sizeOfLastRead = client.GetStream().Read(data, 0, (int)Math.Min(Program.bufferSize, fileSize - alreadyReceived));
+                    if (sizeOfLastRead == 0) {
+                        throw new IOException();
+                        Debug.Write("Impossible receiving file, user canceled transfer or disconnected?");
+                        return;
+                    }
+                    alreadyReceived += sizeOfLastRead;
+                    Debug.WriteLine("Sent " + alreadyReceived.ToString() + "B out of " + fileSize.ToString() + "B");
+                    fs.Write(data, 0, sizeOfLastRead);
+                    fts.UpdateProgress(alreadyReceived);
                 }
-                alreadyReceived += sizeOfLastRead;
-                Debug.WriteLine("Sent " + alreadyReceived.ToString() + "B out of " + fileSize.ToString() + "B");
-                fs.Write(data, 0, sizeOfLastRead);
-                fts.UpdateProgress();
+            }
+            catch (IOException) {
+                // User cancelled the transfer or disconnected
+                fts.Error();
             }
             fs.Close();
             #endregion

@@ -40,6 +40,7 @@
             this.FolderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
             this.FileDialog = new System.Windows.Forms.OpenFileDialog();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.ErrorPublicName = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.UserPicBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CameraPicBox)).BeginInit();
             this.SuspendLayout();
@@ -185,6 +186,17 @@
             // 
             this.FileDialog.FileName = "FileDialog";
             // 
+            // ErrorPublicName
+            // 
+            this.ErrorPublicName.AutoSize = true;
+            this.ErrorPublicName.ForeColor = System.Drawing.Color.Red;
+            this.ErrorPublicName.Location = new System.Drawing.Point(313, 137);
+            this.ErrorPublicName.Name = "ErrorPublicName";
+            this.ErrorPublicName.Size = new System.Drawing.Size(90, 13);
+            this.ErrorPublicName.TabIndex = 17;
+            this.ErrorPublicName.Text = "Cannot be empty!";
+            this.ErrorPublicName.Visible = false;
+            // 
             // Wizard
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -192,6 +204,7 @@
             this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
             this.ClientSize = new System.Drawing.Size(524, 375);
+            this.Controls.Add(this.ErrorPublicName);
             this.Controls.Add(this.Cancel);
             this.Controls.Add(this.Confirm);
             this.Controls.Add(this.Browse);
@@ -237,5 +250,6 @@
         private System.Windows.Forms.FolderBrowserDialog FolderBrowserDialog;
         private System.Windows.Forms.OpenFileDialog FileDialog;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
+        private System.Windows.Forms.Label ErrorPublicName;
     }
 }

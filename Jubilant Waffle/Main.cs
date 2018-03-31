@@ -67,6 +67,10 @@ namespace Jubilant_Waffle {
                 DefaultFolderIcon.ImageLocation = Program.server.UseDefault ? @"icons\folder_default_on.png" : @"icons\folder_default_off.png";
                 string tooltip = Program.server.UseDefault ? "Disable default folder" : "Enable default folder";
                 this.IconToolTip.SetToolTip(this.DefaultFolderIcon, tooltip);
+
+                Program.trayIcon.ContextMenu.MenuItems[1].Text = (Program.server.Status) ? "Go offline" : "Go online";
+                Program.trayIcon.Text = "Jubilant Waffle\nStatus: ";
+                Program.trayIcon.Text += Program.server.Status ? "Online" : "Offline";
             }
         }
         private void ToggleAutosave(object sender, MouseEventArgs e) {

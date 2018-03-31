@@ -49,6 +49,11 @@ namespace Jubilant_Waffle {
             /// <summary>
             /// Apply changes to options and close the form
             /// </summary>
+            
+            if(PublicNameBox.Text == "") {
+                ErrorPublicName.Visible = true;
+                return;
+            }
             WriteConfiguration();
             /* The user pic is store in the %AppData% folder under the name "user.png" so that if the original file is deleted, the pic will not be lost.
              * Using this setup, the image has been changed since last time only if the UserPicBox.ImageLocation is either null or points to the "user.png" file
