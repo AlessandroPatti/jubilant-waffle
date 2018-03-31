@@ -3,36 +3,20 @@
 <h6 align="center"> Anno accademico 2016-2017 </h6>
 
 
-### Progetto del corso
-#### Condivisione di file tramite rete LAN
-Scopo del progetto è l’implementazione di una soluzione che consenta di inviare file o cartelle
-tra due o più computer sfruttando la rete LAN come mezzo di trasmissione.
-### Descrizione del sistema
-Il servizio di sharing, messo in esecuzione in background, consente di annunciare la
-disponibilità del proprio host a tutti gli altri host presenti nella rete locale. Per scoprire la
-presenza di tali host, potrà essere utilizzato un meccanismo basato sull’uso di pacchetti UDP
-multicast o tecnologie simili.
+### Project
+#### File sharing over LAN
+Goal of the project is the implementation of a solution allowing users to send files and folders among computers using the LAN.
+### Requirements
+The service, running in background, announces itself to all other hosts in the network. The network discovery can exploit mechanisms based on multicast UDP packets or similar technologies.
+A host can be configured for private mode: in this case the service will not announce its presence to other hosts and won't accept any file, but will be able to send them anyway.
 
-Un host può essere configurato in modalità privata: in tal caso non rivelerà agli altri host la
-sua presenza e non potrà ricevere alcun file. Potrà però inviarli.
-Un host configurato in modalità pubblica, invece, annuncia la propria presenza, e consente di
-accettare file provenienti da altri computer della rete, comportandosi da server.
-Se l’utente di un host seleziona il menu contestuale (tasto destro) su un file o su una cartella,
-vede apparire una voce che gli consente di condividere il file o la cartella a tutti gli host che si
-sono annunciati o solo a un loro sottoinsieme. In questo caso l’host si comporta da client.
-La connessione tra i diversi host coinvolti nel trasferimento sarà basata su un protocollo di
-rete a piacere.
+If the user of an host running the application right-clicksr a file or a folder in the explore, he will see an entry allowing him to share the file or the folder to all the hosts online or to a subset of them.
+There are no requirements on the protocol used for the communications.
 
-Un host che riceve la richiesta di invio di un file può attendere esplicita conferma da parte
-dell’utente, oppure può essere configurato per accettare automaticamente tutti i file. Può
-chiedere all’utente il percorso in cui memorizzare i file ricevuti, oppure usare un percorso di
-default. Ogni host mantiene l’identità dell’utente attualmente connesso e con tale identità si
-annuncia in rete. Tali comportamenti possono essere configurati tramite le impostazioni
-dell’applicazione.
-Un host può accettare file da parte di più host contemporaneamente.
+An host may be configured to wait for explicit confirmation from the user upon receiving a new request for a file or to accept it automatically. Moreover it should be possible to set a default folder for incoming files as well as asking the destination folder for each request. Each host stores the identity of the user and uses it to announce itself on the network. The overall behaviour of the application should be configurable through the application settings window.
 
-Bisognerà gestire i conflitti in caso di ricezione di più file con stesso nome da salvare sullo
-stesso percorso.
+A host must be able to accept multiple incoming file at the same time.
 
-L’host che invia un file visualizza una barra di avanzamento, una stima del tempo di
-completamento, e dà all’utente la possibilità di annullare l’operazione.
+The application should also manage any case of multiple incoming file with the same file name to be stored in the same folder by proper renaming.
+
+The host sending a file must display a progress bar, an estimation for the transfer time and give the user the possibility to cancel the operation.
