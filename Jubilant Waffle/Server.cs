@@ -405,7 +405,7 @@ namespace Jubilant_Waffle {
                     if (Directory.Exists(dest)) {
                         string noEx = dest;                                       // Full path 
                         int i = 1;                                                // File number
-                        while (File.Exists(path)) {
+                        while (Directory.Exists(dest)) { 
                             dest = noEx + "(" + i.ToString() + ")";
                             i++;
                         }

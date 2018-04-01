@@ -183,9 +183,10 @@ namespace Jubilant_Waffle {
                     fts = files.First.Value;
                     files.RemoveFirst();
                 }
-                if (!fts.cancel)
+                if (!fts.cancel) {
                     /* The follonwing method can be executed on a separate thread to send multiple file at a time */
                     SendFile(fts, new IPEndPoint(System.Net.IPAddress.Parse(fts.ip), Program.port));
+                }
             }
         }
         private void SendFile(FileToSend fts, IPEndPoint IPEndPoint) {
