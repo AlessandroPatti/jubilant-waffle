@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,17 +26,25 @@ namespace Jubilant_Waffle {
         public FlowLayoutPanel container;           // The container for all the visual elements.
         volatile public bool cancel;                // This boolean is set to true when the user wants to cancel the transfer. It has to be check to stop the transfer
         public long startTime;
-
-        public FileToSend(string path, string ip, long fileSize = 0) {
-            this.path = path;
+        public byte type;                                  // Folder or file?
+        public FileToSend(string path, string ip, long fileSize = 0, byte type = Program.FILE) {
+            if (type == Program.DIRECTORY) {
+                if (!Directory.Exists(Program.AppDataFolder + @"\temp"))
+                    Directory.CreateDirectory(Program.AppDataFolder + @"\temp");
+                ZipFile.CreateFromDirectory(path, Program.AppDataFolder + @"\temp\" + Path.GetFileName(path) + ".zip");
+                this.path = Program.AppDataFolder + @"\temp\" + Path.GetFileName(path) + ".zip";
+            }
+            else {
+                this.path = path;
+            }
             this.ip = ip;
             /* If the file size is not set, the constructor will try to retrieve it from the FS.
              * The purpose of the argment is to make this class not only compatible with outgoing transfer
              * but also for incoming, for which the fise size is provided by the remote host
              */
-            this.fileSize = fileSize != 0 ? fileSize : (new System.IO.FileInfo(path)).Length;
+            this.fileSize = fileSize != 0 ? fileSize : (new FileInfo(this.path)).Length;
             label = new Label();
-            label.Text = System.IO.Path.GetFileName(path);
+            label.Text = Path.GetFileName(path);
 
             time = new Label();
 
@@ -57,6 +67,11 @@ namespace Jubilant_Waffle {
             container.Controls.Add(button);
 
             startTime = -1;
+        }
+        ~FileToSend() {
+            if(type == Program.DIRECTORY) {
+                File.Delete(this.path);
+            }
         }
         public delegate void AddToPanelCallback(Control panel);
         public void AddToPanel(Control panel) {

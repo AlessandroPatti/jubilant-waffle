@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -169,7 +170,8 @@ namespace Jubilant_Waffle {
             try {
                 switch (msg[0]) {
                     case Program.FILE:
-                        ReceiveFile(client);
+                    case Program.DIRECTORY:
+                        ReceiveFile(client, msg[0]);
                         break;
                     case Program.INFORMATION_REQUEST:
                         SendPersonalInfo(client);
@@ -252,7 +254,7 @@ namespace Jubilant_Waffle {
             }
             #endregion
         }
-        private void ReceiveFile(TcpClient client) {
+        private void ReceiveFile(TcpClient client, byte type ) {
             /// <summary>
             /// Enstablish a connect with the remote party and manage the reception of a file.
             /// Several dialog may be launched according to the application settings (i.e. AutoSave, UseDefault)
@@ -288,7 +290,10 @@ namespace Jubilant_Waffle {
                         name = "unknown";
                     }
                 }
-                DialogResult res = MessageBox.Show("User '" + name + "' is willing to send you the file '" + filename + "'. Do you want to accept?", "", MessageBoxButtons.YesNo);
+                string msg = "User '" + name + "' is willing to send you the ";
+                msg += type == Program.FILE ? ("file '" + filename) : ("folder '" + Path.GetFileNameWithoutExtension(filename));
+                msg += "'. Do you want to accept?";
+                DialogResult res = MessageBox.Show(msg, "", MessageBoxButtons.YesNo);
                 if (res == DialogResult.No) {
                     client.GetStream().WriteByte(Program.TRANSFER_DENY);
                     // User refused the file
@@ -383,7 +388,19 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Unzip
-            //TODO unzip file
+            if(type == Program.DIRECTORY) {
+                Random random = new Random();
+                string extract_folder="";
+                for (int i = 0; i < 20; i++) {
+                    extract_folder += Convert.ToChar(random.Next() + Convert.ToInt32('A')).ToString();
+                }
+                ZipFile.ExtractToDirectory(path, Program.AppDataFolder + @"\temp\" + extract_folder);
+                foreach(var dir in Directory.GetDirectories(Program.AppDataFolder + @"\temp\" + extract_folder)) {
+                    Directory.Move(dir, Path.GetDirectoryName(path));
+                }
+                File.Delete(path);
+                Directory.Delete(Program.AppDataFolder + @"\temp\" + extract_folder);
+            }
             #endregion
         }
     }

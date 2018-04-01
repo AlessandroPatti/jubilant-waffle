@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.IO.Compression;
 using System.IO.Pipes;
 using System.Net;
 using System.Net.Sockets;
@@ -100,8 +101,7 @@ namespace Jubilant_Waffle {
 
             byte[] data;
             TcpClient client = new TcpClient();
-            client.Connect(System.Net.IPAddress.Loopback, Program.port + 1);
-
+            client.Connect(IPAddress.Loopback, Program.port + 1);
             /* First send the lenght of the string on 4 bytes, then the string itself */
             data = BitConverter.GetBytes(msg.Length);
             client.GetStream().Write(data, 0, data.Length);
@@ -150,8 +150,10 @@ namespace Jubilant_Waffle {
                      */
                     List<FileToSend> tmp = new List<FileToSend>();
                     FileToSend fts;
+                    byte type;
                     foreach (ListViewItem item in UserListView.SelectedItems) {
-                        fts = new FileToSend(path, item.ImageKey);
+                        type = File.GetAttributes(path).HasFlag(FileAttributes.Directory) ? Program.DIRECTORY : Program.FILE;       // Is it a file or a folder?
+                        fts = new FileToSend(path, item.ImageKey, 0, type);
                         fts.AddToPanel(Program.mainbox.ProgressBarsOutPanel);
                         tmp.Add(fts);
                     }
@@ -183,7 +185,7 @@ namespace Jubilant_Waffle {
                 }
                 if (!fts.cancel)
                     /* The follonwing method can be executed on a separate thread to send multiple file at a time */
-                    SendFile(fts, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(fts.ip), Program.port));
+                    SendFile(fts, new IPEndPoint(System.Net.IPAddress.Parse(fts.ip), Program.port));
             }
         }
         private void SendFile(FileToSend fts, IPEndPoint IPEndPoint) {
@@ -195,14 +197,14 @@ namespace Jubilant_Waffle {
             TcpClient tcp = new TcpClient();                                    // The tcp client used to send data 
 
             tcp.ReceiveTimeout = tcp.SendTimeout = Program.timeout;             // Set the timeout for the connection. if the timeout expires, it is asumend that the remote host has disconnected
-            FileStream fs;                                            // The file stream to be send 
+            FileStream fs;                                                      // The file stream to be send 
             byte[] data;
             long dataSent = 0;                                                  // The amount of data already sent
             #endregion
             #region Open connection
             try {
                 tcp.Connect(IPEndPoint);
-                tcp.GetStream().WriteByte(Program.FILE);
+                tcp.GetStream().WriteByte(fts.type);
                 #endregion
                 #region Send file name lenght
                 data = BitConverter.GetBytes(Path.GetFileName(fts.path).Length);
@@ -230,10 +232,7 @@ namespace Jubilant_Waffle {
                 return;
             }
             #endregion
-            #region Zip
-            //TODO zip the file
-            #endregion
-            #region Send file
+           #region Send file
             /* Open the file */
             try {
                 fs = File.OpenRead(fts.path);

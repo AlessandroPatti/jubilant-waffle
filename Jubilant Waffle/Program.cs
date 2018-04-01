@@ -66,7 +66,7 @@ namespace Jubilant_Waffle {
                      * with at least a paramenter, it's the right click case. 
                      */
                     string path = System.String.Join(" ", argv);                                // If the path of the right-clicked file contains spaces, the application will read then as several argments. 
-                    if (File.Exists(path))                                                       // Just to be sure that it was a proper right-click launch.
+                    if (File.Exists(path) || Directory.Exists(path))                            // Just to be sure that it was a proper right-click launch.
                         Client.EnqueueMessage(path);                                            // Enstablish the communication with the main instance.
                 }
                 return;
