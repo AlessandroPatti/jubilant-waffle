@@ -29,14 +29,25 @@ namespace Jubilant_Waffle {
         public byte type;                                  // Folder or file?
         public FileToSend(string path, string ip, long fileSize = 0, byte type = Program.FILE) {
             if (type == Program.DIRECTORY) {
+                string zipPath = Program.AppDataFolder + @"\temp\" + Path.GetFileName(path) + ".zip";
                 if (!Directory.Exists(Program.AppDataFolder + @"\temp"))
                     Directory.CreateDirectory(Program.AppDataFolder + @"\temp");
-                ZipFile.CreateFromDirectory(path, Program.AppDataFolder + @"\temp\" + Path.GetFileName(path) + ".zip");
-                this.path = Program.AppDataFolder + @"\temp\" + Path.GetFileName(path) + ".zip";
+                if (File.Exists(zipPath)) {
+                    string noEx = Path.GetDirectoryName(zipPath) + @"\" + Path.GetFileNameWithoutExtension(zipPath);     // Full path with no file extension
+                    int i = 1;                                                     // File number
+                    string ex = Path.GetExtension(zipPath);          // The extension of the file
+                    while (File.Exists(zipPath)) {
+                        zipPath = noEx + "(" + i.ToString() + ")" + ex;
+                        i++;
+                    }
+                }
+                ZipFile.CreateFromDirectory(path, zipPath, CompressionLevel.NoCompression, true);
+                this.path = zipPath;
             }
             else {
                 this.path = path;
             }
+            this.type = type;
             this.ip = ip;
             /* If the file size is not set, the constructor will try to retrieve it from the FS.
              * The purpose of the argment is to make this class not only compatible with outgoing transfer

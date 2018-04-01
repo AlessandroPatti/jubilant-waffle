@@ -179,7 +179,7 @@ namespace Jubilant_Waffle {
                 }
             }
             catch (IOException) {
-                
+
                 return;
             }
             #endregion
@@ -254,7 +254,7 @@ namespace Jubilant_Waffle {
             }
             #endregion
         }
-        private void ReceiveFile(TcpClient client, byte type ) {
+        private void ReceiveFile(TcpClient client, byte type) {
             /// <summary>
             /// Enstablish a connect with the remote party and manage the reception of a file.
             /// Several dialog may be launched according to the application settings (i.e. AutoSave, UseDefault)
@@ -340,14 +340,15 @@ namespace Jubilant_Waffle {
                     System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
                 }
                 if (File.Exists(path)) {
-                    string noEx = path.Substring(0, path.LastIndexOf("."));     // Full path with no file extension
-                    int i = 1;                                                  // File number
-                    string ex = path.Substring(path.LastIndexOf("."));          // The extension of the file
+                    string noEx = Path.GetDirectoryName(path) + @"\" + Path.GetFileNameWithoutExtension(path);     // Full path with no file extension
+                    int i = 1;                                                     // File number
+                    string ex = Path.GetExtension(path);          // The extension of the file
                     while (File.Exists(path)) {
                         path = noEx + "(" + i.ToString() + ")" + ex;
                         i++;
                     }
                 }
+
                 /* The file is immediately created before releasing the lock */
                 fs = new FileStream(path, System.IO.FileMode.Create);
             }
@@ -388,15 +389,29 @@ namespace Jubilant_Waffle {
             }
             #endregion
             #region Unzip
-            if(type == Program.DIRECTORY) {
+            if (type == Program.DIRECTORY) {
                 Random random = new Random();
-                string extract_folder="";
-                for (int i = 0; i < 20; i++) {
-                    extract_folder += Convert.ToChar(random.Next() + Convert.ToInt32('A')).ToString();
+                string extract_folder;
+                do {
+                    extract_folder = "";
+                    for (int i = 0; i < 20; i++) {
+                        extract_folder += Convert.ToChar(random.Next() % 26 + Convert.ToInt32('A')).ToString();
+                    }
                 }
+                while (Directory.Exists(Program.AppDataFolder + @"\temp\" + extract_folder));
                 ZipFile.ExtractToDirectory(path, Program.AppDataFolder + @"\temp\" + extract_folder);
-                foreach(var dir in Directory.GetDirectories(Program.AppDataFolder + @"\temp\" + extract_folder)) {
-                    Directory.Move(dir, Path.GetDirectoryName(path));
+                foreach (var dir in Directory.GetDirectories(Program.AppDataFolder + @"\temp\" + extract_folder)) {
+                    string dest = Path.GetDirectoryName(path) + @"\" + Path.GetFileName(dir);
+                    if (Directory.Exists(dest)) {
+                        string noEx = dest;                                       // Full path 
+                        int i = 1;                                                // File number
+                        while (File.Exists(path)) {
+                            dest = noEx + "(" + i.ToString() + ")";
+                            i++;
+                        }
+                    }
+
+                    Directory.Move(dir, dest);
                 }
                 File.Delete(path);
                 Directory.Delete(Program.AppDataFolder + @"\temp\" + extract_folder);
