@@ -357,6 +357,22 @@ namespace Jubilant_Waffle {
             FileToSend fts = new FileToSend(path, "", fileSize);
             fts.AddToPanel(Program.mainbox.ProgressBarsInPanel);
             #endregion
+            #region Show BolloonTip
+            string tip;
+            lock (Program.users) {
+                try {
+                    tip = Program.users[((System.Net.IPEndPoint)client.Client.RemoteEndPoint).Address.ToString()].publicName;
+                }
+                catch (KeyNotFoundException e) {
+                    //TODO maybe ask for name?
+                    tip = "An user";
+                }
+            }
+            tip += " is sending the ";
+            tip += type == Program.FILE ? ("file '" + filename) : ("folder '" + Path.GetFileNameWithoutExtension(filename));
+            tip += "'";
+            Program.trayIcon.ShowBalloonTip(500, "Jubilant Waffle", tip, ToolTipIcon.None);
+            #endregion
             #region Receive file
             data = new byte[Program.bufferSize];
             long alreadyReceived = 0;
@@ -390,6 +406,7 @@ namespace Jubilant_Waffle {
             #endregion
             #region Unzip
             if (type == Program.DIRECTORY) {
+                /* Create a folder to extract the zip  in the %AppData%\temp directory*/
                 Random random = new Random();
                 string extract_folder;
                 do {
@@ -399,24 +416,51 @@ namespace Jubilant_Waffle {
                     }
                 }
                 while (Directory.Exists(Program.AppDataFolder + @"\temp\" + extract_folder));
+                /* Extract the zip */
                 ZipFile.ExtractToDirectory(path, Program.AppDataFolder + @"\temp\" + extract_folder);
+                /* Move the content to the target directory. The for iterate on all the directory in the temp folder, but there should be only one */
                 foreach (var dir in Directory.GetDirectories(Program.AppDataFolder + @"\temp\" + extract_folder)) {
+                    /* Manage filename conflicts */
                     string dest = Path.GetDirectoryName(path) + @"\" + Path.GetFileName(dir);
                     if (Directory.Exists(dest)) {
                         string noEx = dest;                                       // Full path 
                         int i = 1;                                                // File number
-                        while (Directory.Exists(dest)) { 
+                        while (Directory.Exists(dest)) {
                             dest = noEx + "(" + i.ToString() + ")";
                             i++;
                         }
                     }
-
-                    Directory.Move(dir, dest);
+                    /* Move directory to the target dir
+                     * Directory.Move only works if temp folder and target folder are on the same volume 
+                     */
+                    try {
+                        if (Directory.GetDirectoryRoot(dir) == Directory.GetDirectoryRoot(dest)) {
+                            Directory.Move(dir, dest);
+                        }
+                        else {
+                            void RecursiveCopy(string src_folder, string dest_folder)
+                            {
+                                foreach (string file in Directory.GetFiles(src_folder)) {
+                                    File.Copy(file, dest_folder + @"\" + Path.GetFileName(file));
+                                }
+                                foreach (string folder in Directory.GetDirectories(src_folder)) {
+                                    Directory.CreateDirectory(dest_folder + @"\" + Path.GetFileName(folder));
+                                    RecursiveCopy(folder, dest_folder + @"\" + Path.GetFileName(folder));
+                                }
+                            }
+                            RecursiveCopy(dir, dest);
+                        }
+                    }
+                    catch (Exception e) {
+                        return;
+                    }
                 }
                 File.Delete(path);
                 Directory.Delete(Program.AppDataFolder + @"\temp\" + extract_folder);
             }
             #endregion
         }
+        
+
     }
 }
