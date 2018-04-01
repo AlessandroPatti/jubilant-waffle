@@ -79,11 +79,6 @@ namespace Jubilant_Waffle {
 
             startTime = -1;
         }
-        ~FileToSend() {
-            if(type == Program.DIRECTORY) {
-                File.Delete(this.path);
-            }
-        }
         public delegate void AddToPanelCallback(Control panel);
         public void AddToPanel(Control panel) {
             if (panel.InvokeRequired) {

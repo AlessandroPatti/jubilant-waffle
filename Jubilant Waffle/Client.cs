@@ -186,6 +186,15 @@ namespace Jubilant_Waffle {
                 if (!fts.cancel) {
                     /* The follonwing method can be executed on a separate thread to send multiple file at a time */
                     SendFile(fts, new IPEndPoint(System.Net.IPAddress.Parse(fts.ip), Program.port));
+                    if (fts.type == Program.DIRECTORY) {
+                        try {
+                            File.Delete(fts.path);
+                        }
+                        catch (IOException e) {
+                            /* Could not remove the file (maybe in user?). The file will not be deleted. */
+                        }
+                    }
+
                 }
             }
         }
@@ -252,6 +261,7 @@ namespace Jubilant_Waffle {
                 }
                 catch (IOException) {
                     Debug.Write("Impossible send file, error will reading");
+                    fs.Close();
                     return;
                 }
                 try {
@@ -259,6 +269,7 @@ namespace Jubilant_Waffle {
                 }
                 catch (IOException e) {
                     Debug.Write("Impossible send file, error will reading");
+                    fs.Close();
                     fts.Error();
                     return;
                 }
@@ -267,6 +278,7 @@ namespace Jubilant_Waffle {
                 fts.UpdateProgress(dataSent);
             }
             tcp.Close();
+            fs.Close();
             #endregion
         }
 
