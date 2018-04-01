@@ -116,7 +116,9 @@
   <ItemGroup>
     <Content Include="icons\autosave_off.png" />
     <Content Include="icons\autosave_on.png" />
+    <Content Include="icons\cancel.png" />
     <Content Include="icons\default-user-image.png" />
+    <Content Include="icons\done.png" />
     <Content Include="icons\edit.png" />
     <Content Include="icons\folder_default_off.png" />
     <Content Include="icons\folder_default_on.png" />
