@@ -233,6 +233,7 @@ namespace Jubilant_Waffle {
             #endregion
             trayIcon.Visible = false;
             WriteSettingsFile();
+            server.Status = false;
             Environment.Exit(0);
         }
 

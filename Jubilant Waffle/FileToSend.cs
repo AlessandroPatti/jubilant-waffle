@@ -35,9 +35,9 @@ namespace Jubilant_Waffle {
             this.fileSize = fileSize != 0 ? fileSize : (new System.IO.FileInfo(path)).Length;
             label = new Label();
             label.Text = System.IO.Path.GetFileName(path);
-            
+
             time = new Label();
-            
+
             pbar = new ProgressBar();
             pbar.Minimum = 0;
             pbar.Maximum = (int)Math.Ceiling((double)this.fileSize / (1024 * 1024));
@@ -87,7 +87,7 @@ namespace Jubilant_Waffle {
                 }
                 else {
                     long cTime = DateTime.Now.Ticks - startTime;
-                    long estimation = cTime * fileSize / status;
+                    long estimation = cTime * fileSize / status - cTime;
                     time.Text = TimeSpan.FromTicks(estimation).ToString(@"hh\:mm\:ss") + " remaining...";
                 }
                 pbar.Value = (int)Math.Ceiling((double)status / (1024 * 1024));

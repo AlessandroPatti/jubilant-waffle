@@ -258,8 +258,8 @@ namespace Jubilant_Waffle {
                     tcp.GetStream().Write(data, 0, sizeOfLastRead);
                 }
                 catch (IOException e) {
-
                     Debug.Write("Impossible send file, error will reading");
+                    fts.Error();
                     return;
                 }
                 dataSent += sizeOfLastRead;
@@ -313,6 +313,7 @@ namespace Jubilant_Waffle {
                             lock (Program.users) {
                                 Program.users.Remove(endpoint.Address.ToString());
                             }
+                            UpdateList();
                         }
                         break;
 
@@ -387,6 +388,7 @@ namespace Jubilant_Waffle {
                 /* The imagepath variable willbe null if no image has been received. */
                 Program.users.Add(userAddress.ToString(), new User(name, userAddress.ToString(), imagepath));
             }
+            UpdateList();
             #endregion
         }
 

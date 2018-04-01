@@ -375,7 +375,12 @@ namespace Jubilant_Waffle {
                 File.Delete(path);
                 return;
             }
+            client.Close();
             fs.Close();
+            if (fts.cancel) {
+                File.Delete(path);
+                return;
+            }
             #endregion
             #region Unzip
             //TODO unzip file
