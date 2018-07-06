@@ -106,7 +106,18 @@ namespace Jubilant_Waffle {
             data = BitConverter.GetBytes(msg.Length);
             client.GetStream().Write(data, 0, data.Length);
             data = Encoding.ASCII.GetBytes(msg);
+
             client.GetStream().Write(data, 0, data.Length);
+
+            /* The following line will force the second instance to keep connection alive.
+             * It will be forcely closed by the main instance when he recive the message */
+            try {
+                client.GetStream().Read(data, 0, data.Length);
+            }
+            catch {
+                /* Message as been received, nothing to do */
+                return;
+            }
         }
         private void ReadMS() {
             /// <summary>
