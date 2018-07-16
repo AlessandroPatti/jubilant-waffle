@@ -101,6 +101,7 @@ namespace Jubilant_Waffle {
         public Server() {
             fsLock = new object();
             optionLock = new object();
+            FolderSelectionDialog = new FolderBrowserDialog();
             #region UDP Client/Server and Timer setup
             udp = new UdpClient();
             IPAddress ip, mask, broadcast;
