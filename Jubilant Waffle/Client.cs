@@ -242,10 +242,15 @@ namespace Jubilant_Waffle {
                 #region Read response
                 tcp.GetStream().Read(data, 0, 1);
             }
-            catch (IOException) {
-                Debug.Write("Impossible send file, socket timeout expired");
-                //TODO Inform the user that transfer has failed
-                return;
+            catch (Exception e){
+                if (e is IOException || e is SocketException) {
+                    Debug.Write("Impossible send file, socket timeout expired");
+                    //TODO Inform the user that transfer has failed
+                    return;
+                }
+                else {
+                    throw e;
+                }
             }
             if (data[0] == Program.TRANSFER_DENY) {
                 /* The remote host refused the file */
@@ -270,19 +275,29 @@ namespace Jubilant_Waffle {
                 try {
                     sizeOfLastRead = fs.Read(data, 0, (int)Math.Min(fts.fileSize - dataSent, data.LongLength));
                 }
-                catch (IOException) {
-                    Debug.Write("Impossible send file, error will reading");
-                    fs.Close();
-                    return;
+                catch (Exception e){
+                    if (e is IOException || e is SocketException) {
+                        Debug.Write("Impossible send file, error will reading");
+                        fs.Close();
+                        return;
+                    }
+                    else {
+                        throw e;
+                    }
                 }
                 try {
                     tcp.GetStream().Write(data, 0, sizeOfLastRead);
                 }
-                catch (IOException e) {
-                    Debug.Write("Impossible send file, error will reading");
-                    fs.Close();
-                    fts.Error();
-                    return;
+                catch (Exception e) {
+                    if (e is IOException || e is SocketException) {
+                        Debug.Write("Impossible send file, error will reading");
+                        fs.Close();
+                        fts.Error();
+                        return;
+                    }
+                    else {
+                        throw e;
+                    }
                 }
                 dataSent += sizeOfLastRead;
                 Debug.WriteLine("Sent " + dataSent.ToString() + "B out of " + fts.fileSize.ToString() + "B");
@@ -320,11 +335,16 @@ namespace Jubilant_Waffle {
                             try {
                                 AddNewUser(endpoint.Address);
                             }
-                            catch (IOException) {
-                                /* IO exception are launched in the method if the user disconnect or
-                                 * if it was not possible to store the informations
-                                 */
-                                //TODO how to discen the two case?
+                            catch (Exception e) {
+                                if (e is IOException || e is SocketException) {
+                                    /* IO exception are launched in the method if the user disconnect or
+                                     * if it was not possible to store the informations
+                                     */
+                                    //TODO how to discen the two case?
+                                }
+                                else {
+                                    throw e;
+                                }
                             }
                         }
                         break;

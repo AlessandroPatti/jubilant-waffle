@@ -161,9 +161,14 @@ namespace Jubilant_Waffle {
             try {
                 client.GetStream().Read(msg, 0, msg.Length);
             }
-            catch (SocketException) {
-                Debug.Write("Impossible parse request, control message not received");
-                return;
+            catch (Exception e){
+                if (e is SocketException || e is IOException) {
+                    Debug.Write("Impossible parse request, control message not received");
+                    return;
+                }
+                else {
+                    throw e;
+                }
             }
             #endregion
             #region Parse request
