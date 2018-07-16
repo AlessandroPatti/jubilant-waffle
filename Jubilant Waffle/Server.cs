@@ -11,7 +11,7 @@ using System.Threading;
 using System.Windows.Forms;
 
 namespace Jubilant_Waffle {
-    public partial class Server : Form {
+    public class Server {
 
         #region Sockets and services
         UdpClient udp;                              // The client used to anounce the server on the net
@@ -19,6 +19,7 @@ namespace Jubilant_Waffle {
         TcpListener tcp;                            // Tcp server listening for users that want to start a transfer
         #endregion
 
+        FolderBrowserDialog FolderSelectionDialog;
         DialogResult res;
         private object fsLock, optionLock;
 
@@ -98,7 +99,6 @@ namespace Jubilant_Waffle {
         #endregion
 
         public Server() {
-            InitializeComponent();
             fsLock = new object();
             optionLock = new object();
             #region UDP Client/Server and Timer setup
@@ -308,7 +308,7 @@ namespace Jubilant_Waffle {
             client.GetStream().WriteByte(Program.TRANSFER_OK);
             if (!UseDefault) {
                 /* FolderSelectionDialog requires STA thread, but this thread is MTA.
-                 * A new thread STA is launche to open the dialog
+                 * A new thread STA is launched to open the dialog
                  */
                 Thread t = new Thread(() => res = FolderSelectionDialog.ShowDialog());
                 t.SetApartmentState(ApartmentState.STA);
